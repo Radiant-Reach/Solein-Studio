@@ -40,8 +40,8 @@ const config: GatsbyConfig = {
   // SITE METADATA
   // ========================================
   siteMetadata: {
-    title: `Gatsby Starter`,
-    description: `Starter Description`,
+    title: `Soleil Studio`,
+    description: `Soleil Studio`,
     author: `Radiant Reach`,
     siteUrl: SITE_URL,
   },
@@ -90,7 +90,7 @@ const config: GatsbyConfig = {
         start_url: `/`,
         background_color: `#da9500`,
         theme_color: `#da9500`,
-        display: `minimal-ui`,
+        display: `browser`,
         icon: `src/assets/icons/favicon.png`,
       },
     },
