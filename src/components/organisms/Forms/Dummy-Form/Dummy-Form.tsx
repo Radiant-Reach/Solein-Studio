@@ -83,7 +83,7 @@ export const DummyForm: React.FC<DummyFormProps> = () => {
           </Button>
         </div>
 
-        {isError && <ErrorText>Wystąpił błąd</ErrorText>}
+        {isError && <ErrorText message="Wystąpił błąd" />}
       </Flex>
     </form>
   )

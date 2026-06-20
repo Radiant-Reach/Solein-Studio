@@ -5,6 +5,7 @@ export type GtmEvent = {
   lead_id?: string
   user_email?: string
   user_phone?: string
+  form_name?: string
 }
 export const sendGtmEvent = (event: GtmEvent) => {
   if (isBrowser) {

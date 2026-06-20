@@ -1,4 +1,5 @@
-import React, { PropsWithChildren, forwardRef } from 'react'
+import { rem } from 'polished'
+import React, { PropsWithChildren, forwardRef, useId } from 'react'
 import styled from 'styled-components'
 
 import { Input } from 'components/atoms/Input'
@@ -9,39 +10,63 @@ import { InferProps, TypedOmit } from 'utils/types'
 const Flex = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 `
 
-type FieldProps = {
-  errorMessage?: string
-} & TypedOmit<InferProps<typeof Input>, '$error'>
+const Label = styled.label`
+  font-size: ${rem(13)};
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: ${({ theme }) => theme.colors.ink600};
+`
 
-export const ErrorText: React.FC<PropsWithChildren> = ({ children }) => {
+type CustomFieldProps = {
+  errorMessage?: string
+}
+
+type FieldProps = {
+  label?: string
+} & CustomFieldProps &
+  TypedOmit<InferProps<typeof Input>, '$error'>
+
+export const ErrorText: React.FC<{ message: string }> = ({ message }) => {
   return (
-    <Text $color="danger" $base={BodySmall}>
-      {children}
-    </Text>
+    <Text
+      $color="danger"
+      $base={BodySmall}
+      dangerouslySetInnerHTML={{ __html: message }}
+    />
   )
 }
 
-export const CustomField: React.FC<PropsWithChildren<FieldProps>> = ({
+export const CustomField: React.FC<PropsWithChildren<CustomFieldProps>> = ({
   errorMessage,
   children,
 }) => {
   return (
     <Flex>
       {children}
-      {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+      {errorMessage && <ErrorText message={errorMessage} />}
     </Flex>
   )
 }
 
 export const Field = forwardRef<HTMLInputElement, FieldProps>(
-  ({ errorMessage, ...props }, ref) => {
+  ({ label, errorMessage, id, ...props }, ref) => {
+    const generatedId = useId()
+    const fieldId = id ?? generatedId
+
     return (
-      <CustomField errorMessage={errorMessage}>
-        <Input $error={!!errorMessage} ref={ref} {...props} />
-      </CustomField>
+      <Flex>
+        {label && (
+          <Label
+            htmlFor={fieldId}
+            dangerouslySetInnerHTML={{ __html: label }}
+          />
+        )}
+        <Input id={fieldId} $error={!!errorMessage} ref={ref} {...props} />
+        {errorMessage && <ErrorText message={errorMessage} />}
+      </Flex>
     )
   }
 )

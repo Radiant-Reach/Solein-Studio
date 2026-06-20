@@ -78,8 +78,8 @@ export const WithError: CustomFieldStory = {
 export const ErrorTextComponent: CustomFieldStory = {
   render: () => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <ErrorText>This is a standalone error message</ErrorText>
-      <ErrorText>You can use ErrorText independently anywhere</ErrorText>
+      <ErrorText message="This is a standalone error message" />
+      <ErrorText message="You can use ErrorText independently anywhere" />
     </div>
   ),
   parameters: {

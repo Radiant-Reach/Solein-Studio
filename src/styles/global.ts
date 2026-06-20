@@ -22,16 +22,7 @@ const Global = css`
   }
 
   body {
-    font-family: IvyEpic, Arial, Helvetica, sans-serif;
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: Rubik, sans-serif;
+    font-family: ${({ theme }) => theme.fonts.primary}, serif;
   }
 `
 

@@ -6,6 +6,7 @@
   "author": "Tomasz Olek <tomasz.olek.dev@gmail.com>",
   "dependencies": {
     "@hookform/resolvers": "^3.6.0",
+    "axios": "^1.11.0",
     "dotenv": "^16.0.3",
     "gatsby": "5.13.6",
     "gatsby-adapter-netlify": "^1.1.6",
@@ -36,6 +37,7 @@
     "react-hook-form": "^7.52.0",
     "react-i18next": "^11.18.6",
     "react-range": "^1.10.0",
+    "slugify": "^1.6.6",
     "styled-components": "^6.0.0",
     "stylis": "^4.0.0",
     "swiper": "^11.1.4",

@@ -3,23 +3,23 @@ import { css } from 'styled-components'
 import { Text } from 'components/atoms/Typography'
 
 export const secondaryContrast = css`
-  background-color: ${({ theme }) => theme.colors.white40};
-  color: ${({ theme }) => theme.colors.white};
+  background-color: ${({ theme }) => theme.colors.transparent};
+  color: ${({ theme }) => theme.colors.cream};
 
-  border: 1px solid ${({ theme }) => theme.colors.white40};
+  border: 1px solid ${({ theme }) => theme.colors.cream33};
 
   svg *[fill] {
-    fill: ${({ theme }) => theme.colors.white};
+    fill: ${({ theme }) => theme.colors.cream};
   }
   svg *[stroke] {
-    stroke: ${({ theme }) => theme.colors.white};
+    stroke: ${({ theme }) => theme.colors.cream};
   }
 
   ${Text} {
-    color: ${({ theme }) => theme.colors.white};
+    color: ${({ theme }) => theme.colors.cream};
   }
 `
 
 export const secondaryContrastHover = css`
-  border: 1px solid ${({ theme }) => theme.colors.white};
+  border: 1px solid ${({ theme }) => theme.colors.cream};
 `

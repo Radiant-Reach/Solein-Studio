@@ -5,10 +5,16 @@ import 'swiper/css/scrollbar'
 import { Autoplay, Mousewheel } from 'swiper/modules'
 import type { SwiperOptions } from 'swiper/types'
 
+import { Icon } from 'components/atoms/Icon'
+
 import { generateArrayOfElements } from 'utils/object'
 import type { BreakpointValue, TypedOmit } from 'utils/types'
 
+import { ReactComponent as ChevronLeft } from 'assets/icons/arrows/chevron-left.svg'
+import { ReactComponent as ChevronRight } from 'assets/icons/arrows/chevron-right.svg'
+
 import {
+  NavButton,
   StyledSwiper,
   StyledSwiperSlide,
   StyledSwiperWrapper,
@@ -54,11 +60,14 @@ export const Swiper = <T,>({
   swiperOptions = {},
   loading = false,
   overflow = false,
+  withNavigation = false,
+  navigationPositionY,
   withAutoplay = false,
   slideOnClick = false,
   initialSlide = null,
 }: SwiperProps<T>) => {
   const [swiper, setSwiper] = useState<SwiperInstance | null>(null)
+  const [navState, setNavState] = useState({ isBeginning: true, isEnd: false })
   const finalModules = [
     ...DEFAULT_SWIPER_OPTIONS.modules,
     ...(withAutoplay ? [Autoplay] : []),
@@ -77,10 +86,20 @@ export const Swiper = <T,>({
     SwiperOptions['slidesPerView']
   >(swiper?.params.slidesPerView ?? finalOptions.slidesPerView)
 
+  const updateNavState = (s: SwiperInstance) => {
+    setNavState({ isBeginning: s.isBeginning, isEnd: s.isEnd })
+  }
+
   const onSwiperUpdate = (s: SwiperInstance) => {
     setSwiper(s)
     setCurrentSlidesPerView(s.params.slidesPerView)
+    updateNavState(s)
     if (onSwiper) onSwiper(s)
+  }
+
+  const handleSlideChange = (s: SwiperInstance) => {
+    updateNavState(s)
+    onSlideChange?.(s)
   }
 
   useEffect(() => {
@@ -98,7 +117,7 @@ export const Swiper = <T,>({
       <StyledSwiperWrapper className="styled-swiper-wrapper">
         <StyledSwiper
           {...finalOptions}
-          onSlideChange={onSlideChange}
+          onSlideChange={handleSlideChange}
           onSwiper={onSwiperUpdate}
           onResize={onSwiperUpdate}
           $overflow={overflow}
@@ -126,6 +145,32 @@ export const Swiper = <T,>({
                 </StyledSwiperSlide>
               ))}
         </StyledSwiper>
+
+        {withNavigation && !loading && items.length > 1 && (
+          <>
+            <NavButton
+              type="button"
+              $side="left"
+              $positionY={navigationPositionY}
+              aria-label="Poprzedni slajd"
+              disabled={navState.isBeginning}
+              onClick={() => swiper?.slidePrev()}
+            >
+              <Icon src={ChevronLeft} size={16} />
+            </NavButton>
+
+            <NavButton
+              type="button"
+              $side="right"
+              $positionY={navigationPositionY}
+              aria-label="Następny slajd"
+              disabled={navState.isEnd}
+              onClick={() => swiper?.slideNext()}
+            >
+              <Icon src={ChevronRight} size={16} />
+            </NavButton>
+          </>
+        )}
       </StyledSwiperWrapper>
     </SwiperWrapper>
   )

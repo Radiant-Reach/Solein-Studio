@@ -20,7 +20,7 @@ export const iterateBreakpoints = <T>(
     .filter((breakpoint) => `$${breakpoint}` in breakpoints)
     .map((breakpoint) => ({
       breakpoint,
-      value: breakpoints[`${breakpoint}`]!,
+      value: (breakpoints as unknown as Record<string, T>)[`$${breakpoint}`],
     }))
 
 /**

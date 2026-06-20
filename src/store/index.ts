@@ -6,4 +6,7 @@ export const boolAtom = atom<boolean>(false)
 // https://jotai.org/docs/utilities/storage
 export const favoritesAtom = atomWithStorage<string[]>('favorites', [])
 
+export const scrollLockAtom = atom<boolean>(false)
+export const mobileMenuOpenAtom = atom<boolean>(false)
+
 export const store = createStore()

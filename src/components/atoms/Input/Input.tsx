@@ -11,7 +11,10 @@ import {
   inputCss,
 } from './Input.style'
 
-export type InputProps = InferProps<typeof StyledInput> & { icon?: IconAsSVG }
+export type InputProps = InferProps<typeof StyledInput> & {
+  icon?: IconAsSVG
+  rows?: number
+}
 const Input = forwardRef<HTMLInputElement, InputProps>(({ ...props }, ref) => {
   const { icon: iconProp, ...inputProps } = props
 

@@ -16,27 +16,11 @@ export const onRenderBody: GatsbySSR['onRenderBody'] = ({
   setHeadComponents([
     <link
       rel="preload"
-      href="/fonts/IvyEpic_Bold.woff2"
+      href="/fonts/Marcellus-Regular.ttf"
       as="font"
-      type="font/woff2"
+      type="font/ttf"
       crossOrigin="anonymous"
-      key="RedHatDisplay-Bold"
-    />,
-    <link
-      rel="preload"
-      href="/fonts/IvyEpic_Medium.woff2"
-      as="font"
-      type="font/woff2"
-      crossOrigin="anonymous"
-      key="RedHatDisplay-Medium"
-    />,
-    <link
-      rel="preload"
-      href="/fonts/IvyEpic_Regular.woff2"
-      as="font"
-      type="font/woff2"
-      crossOrigin="anonymous"
-      key="RedHatDisplay-Regular"
+      key="Marcellus-Regular"
     />,
   ])
 }

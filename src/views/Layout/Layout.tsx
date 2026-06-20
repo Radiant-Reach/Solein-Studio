@@ -3,6 +3,11 @@ import React, { Suspense, lazy } from 'react'
 
 import { env } from 'env'
 
+import { Footer } from 'components/organisms/Footer'
+import { Navigation } from 'components/organisms/Navigation'
+
+import { Main } from './Layout.style'
+
 const Breakpoint = lazy(() => import('components/organisms/Breakpoint'))
 
 type LayoutProps = {
@@ -18,7 +23,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Suspense>
       )}
 
-      <main>{children}</main>
+      <Navigation />
+
+      <Main>{children}</Main>
+
+      <Footer />
     </>
   )
 }

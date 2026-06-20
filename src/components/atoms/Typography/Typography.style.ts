@@ -64,6 +64,11 @@ ${({ $lineLimit }) =>
         }
       `
     )};
+
+  span.styled {
+    font-family: 'Caveat';
+    color: ${({ theme }) => theme.colors.terracotta};
+  }
 `
 
 export const Weight = styled.span<{ $weight: CSSProperties['fontWeight'] }>`

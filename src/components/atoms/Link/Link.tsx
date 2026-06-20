@@ -13,6 +13,11 @@ export type LinkProps = {
   language?: 'pl' | 'en'
   ignoreLanguage?: boolean
   className?: string
+  activeClassName?: string
+  partiallyActive?: boolean
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>
+  'aria-label'?: string
+  dangerouslySetInnerHTML?: { __html: string }
 }
 const INTERNAL_LINK_START = ['/', '#', './']
 export const Link: React.FC<PropsWithChildren<LinkProps>> = ({

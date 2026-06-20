@@ -26,6 +26,8 @@ const optionalEmail = email.optional()
 
 const optionalPhone = phone.optional()
 
+const optionalMessage = message.optional()
+
 export const requiredAgree = z.literal<boolean>(true, {
   errorMap: () => ({ message: 'Proszę zaznaczyć zgodę' }),
 })
@@ -70,6 +72,25 @@ export const MODAL_FORM_INIT_VALUES = {
   phone: '',
   message: '',
 } satisfies ModalFormSchema
+
+// Contact (booking inquiry) form schema
+export const CONTACT_FORM_SCHEMA = z.object({
+  name,
+  email,
+  phone: optionalPhone,
+  eventDate: z.string().optional(),
+  message: optionalMessage,
+})
+
+export type ContactFormSchema = z.infer<typeof CONTACT_FORM_SCHEMA>
+
+export const CONTACT_FORM_INIT_VALUES = {
+  name: '',
+  email: '',
+  phone: undefined,
+  eventDate: undefined,
+  message: undefined,
+} satisfies ContactFormSchema
 
 // Job form schema
 export const JOB_FORM_SCHEMA = z.object({

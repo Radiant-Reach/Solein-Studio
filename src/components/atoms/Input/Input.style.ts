@@ -1,4 +1,4 @@
-import { rem } from 'polished'
+import { rem, rgba } from 'polished'
 import styled, { css } from 'styled-components'
 
 import { BodyBig, BodyMedium } from 'components/atoms/Typography'
@@ -12,23 +12,37 @@ export type InputProps = {
 
 export const inputCss = css<InputProps>`
   width: 100%;
-  padding: ${rem(9)} ${rem(16)};
+  box-sizing: border-box;
+  padding: ${rem(13)} ${rem(16)};
 
   text-align: left;
+  resize: ${({ $textarea }) => ($textarea ? 'vertical' : 'none')};
 
-  border: 1px solid
-    ${({ theme, $error }) => ($error ? theme.colors.danger : theme.colors.gray)};
-  border-radius: 8px;
-  background-color: ${({ theme }) => theme.colors.white};
+  border: 1.5px solid
+    ${({ theme, $error }) =>
+      $error ? theme.colors.danger : theme.colors.espresso38};
+  border-radius: ${rem(12)};
+  background-color: ${({ theme }) => theme.colors.sand50};
+  outline: none;
   overflow: hidden;
 
   ${BodyBig}
-  color: ${({ theme, $error }) =>
-    $error ? theme.colors.danger : theme.colors.dark};
+  color: ${({ theme }) => theme.colors.ink800};
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   &::placeholder {
-    color: ${({ theme, $error }) =>
-      $error ? theme.colors.danger : theme.colors.gray};
+    color: ${({ theme }) => theme.colors.ink400};
+  }
+
+  &:focus {
+    border-color: ${({ theme, $error }) =>
+      $error ? theme.colors.danger : theme.colors.terracotta};
+    box-shadow: 0 0 0 3px
+      ${({ theme, $error }) =>
+        rgba($error ? theme.colors.danger : theme.colors.terracotta, 0.15)};
   }
 
   ${media.lg.min} {
@@ -56,7 +70,7 @@ export const InputIcon = styled.div`
 
   border-top-right-radius: 100px;
   border-bottom-right-radius: 100px;
-  background: ${({ theme }) => theme.colors.white};
+  background: ${({ theme }) => theme.colors.sand50};
 `
 
 export const Input = styled.input<InputProps>`

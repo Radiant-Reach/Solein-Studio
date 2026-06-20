@@ -124,9 +124,14 @@ export const Button = styled.button<ButtonProps>`
   align-items: center;
 
   text-decoration: none;
+  border-radius: 999px;
 
   position: relative;
   overflow: hidden;
+
+  &:active {
+    transform: scale(0.96);
+  }
 
   ${ButtonHover}
 
