@@ -14,16 +14,16 @@ import {
   Logo,
   PhotoPanel,
   Texture,
-} from './HomeHeroSplit.style'
+} from './HomeHero.style'
 
-export type HomeHeroSplitProps = {
+export type HomeHeroProps = {
   leftTone: PhotoFrameTone
   rightTone: PhotoFrameTone
   ctaLabel: string
   ctaTo: string
 }
 
-export const HomeHeroSplit: React.FC<HomeHeroSplitProps> = ({
+export const HomeHero: React.FC<HomeHeroProps> = ({
   leftTone,
   rightTone,
   ctaLabel,

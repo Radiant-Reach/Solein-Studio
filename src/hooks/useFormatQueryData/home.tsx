@@ -7,8 +7,6 @@ import { CtaBannerProps } from 'components/molecules/CtaBanner'
 import { EventsTeaserProps } from 'components/organisms/EventsTeaser'
 import { GalleryTeaserProps } from 'components/organisms/GalleryTeaser'
 import { HomeHeroProps } from 'components/organisms/HomeHero'
-import { HomeHeroGalleryProps } from 'components/organisms/HomeHeroGallery'
-import { HomeHeroSplitProps } from 'components/organisms/HomeHeroSplit'
 import { InstagramTeaserProps } from 'components/organisms/InstagramTeaser'
 import { RoomsOverviewProps } from 'components/organisms/RoomsOverview'
 import { StudioIntroProps } from 'components/organisms/StudioIntro'
@@ -33,45 +31,11 @@ const formatEventDate = (date: string) =>
 export const useFormatQueryData = () => {
   return useMemo(() => {
     const HOME_HERO_DATA = {
-      eyebrow: 'Soleil Studio Wrocław',
-      heading: 'Twój dzień w <span class="styled">słońcu</span>',
-      description:
-        'Słoneczne studio do wynajęcia w sercu Wrocławia — na warsztaty, świętowanie i chwile wytchnienia.',
-      tone: pickFromSeed(slugify('Home hero'), PHOTO_FRAME_TONES),
-      primaryCtaLabel: 'Sprawdź dostępność',
-      primaryCtaTo: '/kontakt',
-      secondaryCtaLabel: 'Zobacz sale',
-      secondaryCtaTo: '/nasze-sale',
-    } satisfies HomeHeroProps
-
-    const HOME_HERO_GALLERY_DATA = {
-      eyebrow: 'Soleil Studio Wrocław',
-      heading: 'Twój dzień w <span class="styled">słońcu</span>',
-      description:
-        'Słoneczne studio do wynajęcia w sercu Wrocławia — na warsztaty, świętowanie i chwile wytchnienia.',
-      photos: [
-        slugify('Home hero gallery 1'),
-        slugify('Home hero gallery 2'),
-        slugify('Home hero gallery 3'),
-      ].map((id) => ({ id, tone: pickFromSeed(id, PHOTO_FRAME_TONES) })),
-      primaryCtaLabel: 'Sprawdź dostępność',
-      primaryCtaTo: '/kontakt',
-      secondaryCtaLabel: 'Zobacz sale',
-      secondaryCtaTo: '/nasze-sale',
-    } satisfies HomeHeroGalleryProps
-
-    const HOME_HERO_SPLIT_DATA = {
-      leftTone: pickFromSeed(
-        slugify('Home hero split left'),
-        PHOTO_FRAME_TONES
-      ),
-      rightTone: pickFromSeed(
-        slugify('Home hero split right'),
-        PHOTO_FRAME_TONES
-      ),
+      leftTone: pickFromSeed(slugify('Home hero left'), PHOTO_FRAME_TONES),
+      rightTone: pickFromSeed(slugify('Home hero right'), PHOTO_FRAME_TONES),
       ctaLabel: 'Zarezerwuj',
       ctaTo: '/kontakt',
-    } satisfies HomeHeroSplitProps
+    } satisfies HomeHeroProps
 
     const ROOMS_OVERVIEW_DATA = {
       eyebrow: 'Nasze sale',
@@ -175,8 +139,6 @@ export const useFormatQueryData = () => {
 
     return {
       HOME_HERO_DATA,
-      HOME_HERO_GALLERY_DATA,
-      HOME_HERO_SPLIT_DATA,
       ROOMS_OVERVIEW_DATA,
       EVENTS_TEASER_DATA,
       STUDIO_INTRO_DATA,

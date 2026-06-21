@@ -4,6 +4,7 @@ import { Container } from 'components/atoms/Container'
 import { PhotoFrame, PhotoFrameTone } from 'components/atoms/PhotoFrame'
 import { BodySmall, Text } from 'components/atoms/Typography'
 
+import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import {
@@ -12,6 +13,8 @@ import {
   Grid,
   GridItem,
   HeadingWrapper,
+  LightboxPhoto,
+  Tile,
   Wrapper,
 } from './Gallery.style'
 
@@ -46,11 +49,14 @@ export const Gallery: React.FC<GalleryProps> = ({
   shots,
 }) => {
   const [activeFilter, setActiveFilter] = useState(ALL_FILTER_ID)
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
   const visibleShots =
     activeFilter === ALL_FILTER_ID
       ? shots
       : shots.filter((shot) => shot.category === activeFilter)
+
+  const activeShot = activeIndex !== null ? visibleShots[activeIndex] : null
 
   return (
     <Wrapper>
@@ -66,7 +72,10 @@ export const Gallery: React.FC<GalleryProps> = ({
                 key={item.id}
                 type="button"
                 $active={activeFilter === item.id}
-                onClick={() => setActiveFilter(item.id)}
+                onClick={() => {
+                  setActiveFilter(item.id)
+                  setActiveIndex(null)
+                }}
               >
                 <Text
                   as="span"
@@ -80,17 +89,52 @@ export const Gallery: React.FC<GalleryProps> = ({
         </HeadingWrapper>
 
         <Grid>
-          {visibleShots.map((shot) => (
+          {visibleShots.map((shot, index) => (
             <GridItem
               key={shot.id}
               $colSpan={shot.colSpan}
               $rowSpan={shot.rowSpan}
             >
-              <PhotoFrame tone={shot.tone} />
+              <Tile
+                type="button"
+                aria-label="Powiększ zdjęcie"
+                onClick={() => setActiveIndex(index)}
+              >
+                <PhotoFrame tone={shot.tone} />
+              </Tile>
             </GridItem>
           ))}
         </Grid>
       </Container>
+
+      <Lightbox
+        isOpen={activeShot !== null}
+        onClose={() => setActiveIndex(null)}
+        onPrev={
+          visibleShots.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null
+                    ? null
+                    : (prev - 1 + visibleShots.length) % visibleShots.length
+                )
+            : undefined
+        }
+        onNext={
+          visibleShots.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null ? null : (prev + 1) % visibleShots.length
+                )
+            : undefined
+        }
+      >
+        {activeShot && (
+          <LightboxPhoto>
+            <PhotoFrame tone={activeShot.tone} />
+          </LightboxPhoto>
+        )}
+      </Lightbox>
     </Wrapper>
   )
 }

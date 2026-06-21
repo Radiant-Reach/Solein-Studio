@@ -3,10 +3,10 @@ import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
 
-import { RoomDetails } from 'components/organisms/RoomDetails'
-import { RoomGallery } from 'components/organisms/RoomGallery'
-import { RoomHero } from 'components/organisms/RoomHero'
-import { RoomPricing } from 'components/organisms/RoomPricing'
+import { RoomDetails } from 'components/organisms/Room/Details'
+import { RoomGallery } from 'components/organisms/Room/Gallery'
+import { RoomHero } from 'components/organisms/Room/Hero'
+import { RoomPricing } from 'components/organisms/Room/Pricing'
 import { StudioEquipment } from 'components/organisms/StudioEquipment'
 
 import { Layout } from 'views/Layout'

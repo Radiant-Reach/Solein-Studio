@@ -7,7 +7,7 @@ import { CtaBanner } from 'components/molecules/CtaBanner'
 
 import { EventsTeaser } from 'components/organisms/EventsTeaser'
 import { GalleryTeaser } from 'components/organisms/GalleryTeaser'
-import { HomeHeroSplit } from 'components/organisms/HomeHeroSplit'
+import { HomeHero } from 'components/organisms/HomeHero'
 import { InstagramTeaser } from 'components/organisms/InstagramTeaser'
 import { RoomsOverview } from 'components/organisms/RoomsOverview'
 import { StudioIntro } from 'components/organisms/StudioIntro'
@@ -18,7 +18,7 @@ import { useFormatQueryData } from 'hooks/useFormatQueryData/home'
 
 const IndexPage: React.FC<PageProps> = () => {
   const {
-    HOME_HERO_SPLIT_DATA,
+    HOME_HERO_DATA,
     ROOMS_OVERVIEW_DATA,
     EVENTS_TEASER_DATA,
     STUDIO_INTRO_DATA,
@@ -33,7 +33,7 @@ const IndexPage: React.FC<PageProps> = () => {
         description="Słoneczne studio do wynajęcia w sercu Wrocławia — sala Wschód i Zachód na warsztaty, sesje zdjęciowe i wydarzenia."
       />
 
-      <HomeHeroSplit {...HOME_HERO_SPLIT_DATA} />
+      <HomeHero {...HOME_HERO_DATA} />
       <RoomsOverview {...ROOMS_OVERVIEW_DATA} />
       <EventsTeaser {...EVENTS_TEASER_DATA} />
       <StudioIntro {...STUDIO_INTRO_DATA} />

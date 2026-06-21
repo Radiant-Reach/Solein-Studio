@@ -28,6 +28,8 @@ export const PhotoTile = styled.button`
 `
 
 export const LightboxPhoto = styled.div`
-  width: 100%;
   aspect-ratio: 1 / 1;
+  width: min(90vw, 85vh);
+  max-width: 90vw;
+  max-height: 85vh;
 `

@@ -3,10 +3,10 @@ import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
 
-import { PricingAddons } from 'components/organisms/PricingAddons'
-import { PricingHero } from 'components/organisms/PricingHero'
-import { PricingPlans } from 'components/organisms/PricingPlans'
-import { PricingRules } from 'components/organisms/PricingRules'
+import { PricingAddons } from 'components/organisms/Pricing/Addons'
+import { PricingHero } from 'components/organisms/Pricing/Hero'
+import { PricingPlans } from 'components/organisms/Pricing/Plans'
+import { PricingRules } from 'components/organisms/Pricing/Rules'
 import { StudioEquipment } from 'components/organisms/StudioEquipment'
 
 import { Layout } from 'views/Layout'

@@ -1,15 +1,18 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { Container } from 'components/atoms/Container'
 import { PhotoFrame, PhotoFrameTone } from 'components/atoms/PhotoFrame'
 import { BodyBig, BodySmall, Text } from 'components/atoms/Typography'
 
+import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import {
   HeadingWrapper,
+  LightboxPhoto,
   PhotoRow,
   PhotoTile,
+  PhotoTileButton,
   PossibilitiesGrid,
   PossibilityCard,
   Wrapper,
@@ -40,39 +43,79 @@ export const EventPossibilities: React.FC<EventPossibilitiesProps> = ({
   lead,
   photos,
   possibilities,
-}) => (
-  <Wrapper>
-    <Container $variant="wide">
-      <HeadingWrapper>
-        <SectionHeading eyebrow={eyebrow} lead={lead}>
-          {heading}
-        </SectionHeading>
-      </HeadingWrapper>
+}) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const activePhoto = activeIndex !== null ? photos[activeIndex] : null
 
-      <PhotoRow>
-        {photos.map((photo) => (
-          <PhotoTile key={photo.id}>
-            <PhotoFrame tone={photo.tone} />
-          </PhotoTile>
-        ))}
-      </PhotoRow>
+  return (
+    <Wrapper>
+      <Container $variant="wide">
+        <HeadingWrapper>
+          <SectionHeading eyebrow={eyebrow} lead={lead}>
+            {heading}
+          </SectionHeading>
+        </HeadingWrapper>
 
-      <PossibilitiesGrid>
-        {possibilities.map((possibility) => (
-          <PossibilityCard key={possibility.id}>
-            <Text
-              $base={BodyBig}
-              $color="terracotta"
-              dangerouslySetInnerHTML={{ __html: possibility.title }}
-            />
-            <Text
-              $base={BodySmall}
-              $color="ink600"
-              dangerouslySetInnerHTML={{ __html: possibility.description }}
-            />
-          </PossibilityCard>
-        ))}
-      </PossibilitiesGrid>
-    </Container>
-  </Wrapper>
-)
+        <PhotoRow>
+          {photos.map((photo, index) => (
+            <PhotoTile key={photo.id}>
+              <PhotoTileButton
+                type="button"
+                aria-label="Powiększ zdjęcie"
+                onClick={() => setActiveIndex(index)}
+              >
+                <PhotoFrame tone={photo.tone} />
+              </PhotoTileButton>
+            </PhotoTile>
+          ))}
+        </PhotoRow>
+
+        <PossibilitiesGrid>
+          {possibilities.map((possibility) => (
+            <PossibilityCard key={possibility.id}>
+              <Text
+                $base={BodyBig}
+                $color="terracotta"
+                dangerouslySetInnerHTML={{ __html: possibility.title }}
+              />
+              <Text
+                $base={BodySmall}
+                $color="ink600"
+                dangerouslySetInnerHTML={{ __html: possibility.description }}
+              />
+            </PossibilityCard>
+          ))}
+        </PossibilitiesGrid>
+      </Container>
+
+      <Lightbox
+        isOpen={activePhoto !== null}
+        onClose={() => setActiveIndex(null)}
+        onPrev={
+          photos.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null
+                    ? null
+                    : (prev - 1 + photos.length) % photos.length
+                )
+            : undefined
+        }
+        onNext={
+          photos.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null ? null : (prev + 1) % photos.length
+                )
+            : undefined
+        }
+      >
+        {activePhoto && (
+          <LightboxPhoto>
+            <PhotoFrame tone={activePhoto.tone} />
+          </LightboxPhoto>
+        )}
+      </Lightbox>
+    </Wrapper>
+  )
+}

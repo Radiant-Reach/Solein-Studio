@@ -2,10 +2,10 @@ import React, { useMemo } from 'react'
 
 import { Weight } from 'components/atoms/Typography'
 
-import { PricingAddonsProps } from 'components/organisms/PricingAddons'
-import { PricingHeroProps } from 'components/organisms/PricingHero'
-import { PricingPlansProps } from 'components/organisms/PricingPlans'
-import { PricingRulesProps } from 'components/organisms/PricingRules'
+import { PricingAddonsProps } from 'components/organisms/Pricing/Addons'
+import { PricingHeroProps } from 'components/organisms/Pricing/Hero'
+import { PricingPlansProps } from 'components/organisms/Pricing/Plans'
+import { PricingRulesProps } from 'components/organisms/Pricing/Rules'
 import { StudioEquipmentProps } from 'components/organisms/StudioEquipment'
 
 import { EQUIPMENT_CATEGORIES } from 'constants/equipment'

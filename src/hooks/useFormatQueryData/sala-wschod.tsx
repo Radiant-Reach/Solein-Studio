@@ -2,10 +2,10 @@ import { useMemo } from 'react'
 
 import { PHOTO_FRAME_TONES } from 'components/atoms/PhotoFrame'
 
-import { RoomDetailsProps } from 'components/organisms/RoomDetails'
-import { RoomGalleryProps } from 'components/organisms/RoomGallery'
-import { RoomHeroProps } from 'components/organisms/RoomHero'
-import { RoomPricingProps } from 'components/organisms/RoomPricing'
+import { RoomDetailsProps } from 'components/organisms/Room/Details'
+import { RoomGalleryProps } from 'components/organisms/Room/Gallery'
+import { RoomHeroProps } from 'components/organisms/Room/Hero'
+import { RoomPricingProps } from 'components/organisms/Room/Pricing'
 import { StudioEquipmentProps } from 'components/organisms/StudioEquipment'
 
 import { EQUIPMENT_CATEGORIES } from 'constants/equipment'

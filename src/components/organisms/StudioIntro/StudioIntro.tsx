@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 import { ArrowButton } from 'components/atoms/Button'
 import { Container } from 'components/atoms/Container'
@@ -12,6 +12,7 @@ import {
   Text,
 } from 'components/atoms/Typography'
 
+import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import {
@@ -23,6 +24,8 @@ import {
   HeroPhotoTile,
   IntroParagraphs,
   IntroWrapper,
+  LightboxPhoto,
+  PhotoTileButton,
   Wrapper,
 } from './StudioIntro.style'
 
@@ -93,62 +96,124 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
   ctaText,
   ctaLabel,
   ctaTo,
-}) => (
-  <Wrapper>
-    <Container $variant="normal">
-      <IntroWrapper>
-        <SectionHeading eyebrow={eyebrow} lead={lead}>
-          {heading}
-        </SectionHeading>
+}) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
-        <IntroParagraphs>
-          {paragraphs.map((paragraph) => (
-            <Text
-              key={paragraph.id}
-              $base={BodyMedium}
-              $color="ink600"
-              dangerouslySetInnerHTML={{ __html: paragraph.text }}
-            />
+  const galleryPhotos: StudioPhoto[] = [
+    ...heroPhotos,
+    ...features.map((feature) => ({ id: feature.id, tone: feature.tone })),
+  ]
+
+  const activePhoto = activeIndex !== null ? galleryPhotos[activeIndex] : null
+
+  return (
+    <Wrapper>
+      <Container $variant="normal">
+        <IntroWrapper>
+          <SectionHeading eyebrow={eyebrow} lead={lead}>
+            {heading}
+          </SectionHeading>
+
+          <IntroParagraphs>
+            {paragraphs.map((paragraph) => (
+              <Text
+                key={paragraph.id}
+                $base={BodyMedium}
+                $color="ink600"
+                dangerouslySetInnerHTML={{ __html: paragraph.text }}
+              />
+            ))}
+          </IntroParagraphs>
+        </IntroWrapper>
+
+        <HeroPhotoRow>
+          {heroPhotos.map((photo, index) => (
+            <HeroPhotoTile key={photo.id}>
+              <PhotoTileButton
+                type="button"
+                aria-label="Powiększ zdjęcie"
+                onClick={() => setActiveIndex(index)}
+              >
+                <PhotoFrame tone={photo.tone} />
+              </PhotoTileButton>
+            </HeroPhotoTile>
           ))}
-        </IntroParagraphs>
-      </IntroWrapper>
+        </HeroPhotoRow>
 
-      <HeroPhotoRow>
-        {heroPhotos.map((photo) => (
-          <HeroPhotoTile key={photo.id}>
-            <PhotoFrame tone={photo.tone} />
-          </HeroPhotoTile>
-        ))}
-      </HeroPhotoRow>
+        {features.map((feature, index) => {
+          const galleryIndex = heroPhotos.length + index
 
-      {features.map((feature, index) => (
-        <FeatureRow key={feature.id}>
-          {index % 2 === 1 ? (
-            <>
-              <FeatureTextBlock feature={feature} />
-              <FeaturePhoto>
-                <PhotoFrame tone={feature.tone} />
-              </FeaturePhoto>
-            </>
-          ) : (
-            <>
-              <FeaturePhoto>
-                <PhotoFrame tone={feature.tone} />
-              </FeaturePhoto>
-              <FeatureTextBlock feature={feature} />
-            </>
-          )}
-        </FeatureRow>
-      ))}
+          return (
+            <FeatureRow key={feature.id}>
+              {index % 2 === 1 ? (
+                <>
+                  <FeatureTextBlock feature={feature} />
+                  <FeaturePhoto>
+                    <PhotoTileButton
+                      type="button"
+                      aria-label="Powiększ zdjęcie"
+                      onClick={() => setActiveIndex(galleryIndex)}
+                    >
+                      <PhotoFrame tone={feature.tone} />
+                    </PhotoTileButton>
+                  </FeaturePhoto>
+                </>
+              ) : (
+                <>
+                  <FeaturePhoto>
+                    <PhotoTileButton
+                      type="button"
+                      aria-label="Powiększ zdjęcie"
+                      onClick={() => setActiveIndex(galleryIndex)}
+                    >
+                      <PhotoFrame tone={feature.tone} />
+                    </PhotoTileButton>
+                  </FeaturePhoto>
+                  <FeatureTextBlock feature={feature} />
+                </>
+              )}
+            </FeatureRow>
+          )
+        })}
 
-      <CtaWrapper>
-        <Text
-          $base={BodyMedium}
-          $color="ink600"
-          dangerouslySetInnerHTML={{ __html: ctaText }}
-        />
-        <ArrowButton to={ctaTo} label={ctaLabel} color="ink800" />
-      </CtaWrapper>
-    </Container>
-  </Wrapper>
-)
+        <CtaWrapper>
+          <Text
+            $base={BodyMedium}
+            $color="ink600"
+            dangerouslySetInnerHTML={{ __html: ctaText }}
+          />
+          <ArrowButton to={ctaTo} label={ctaLabel} color="ink800" />
+        </CtaWrapper>
+      </Container>
+
+      <Lightbox
+        isOpen={activePhoto !== null}
+        onClose={() => setActiveIndex(null)}
+        onPrev={
+          galleryPhotos.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null
+                    ? null
+                    : (prev - 1 + galleryPhotos.length) % galleryPhotos.length
+                )
+            : undefined
+        }
+        onNext={
+          galleryPhotos.length > 1
+            ? () =>
+                setActiveIndex((prev) =>
+                  prev === null ? null : (prev + 1) % galleryPhotos.length
+                )
+            : undefined
+        }
+      >
+        {activePhoto && (
+          <LightboxPhoto>
+            <PhotoFrame tone={activePhoto.tone} />
+          </LightboxPhoto>
+        )}
+      </Lightbox>
+    </Wrapper>
+  )
+}

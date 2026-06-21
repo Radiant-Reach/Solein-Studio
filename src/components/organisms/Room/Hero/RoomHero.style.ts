@@ -46,3 +46,21 @@ export const HeroButtons = styled.div`
 export const HeroPhoto = styled.div`
   aspect-ratio: 4 / 3;
 `
+
+export const HeroPhotoButton = styled.button`
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  background: none;
+`
+
+export const LightboxPhoto = styled.div`
+  aspect-ratio: 4 / 3;
+  width: min(90vw, calc(85vh * 4 / 3));
+  max-width: 90vw;
+  max-height: 85vh;
+`

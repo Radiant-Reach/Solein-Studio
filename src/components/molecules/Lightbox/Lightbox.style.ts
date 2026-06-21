@@ -18,8 +18,11 @@ export const Overlay = styled.div`
 
 export const Content = styled.div`
   position: relative;
-  width: 100%;
-  max-width: ${rem(480)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
 `
 
 export const CloseButton = styled.button`
