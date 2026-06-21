@@ -1,16 +1,28 @@
 import { PageProps } from 'gatsby'
-import * as React from 'react'
+import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
 
+import { NotFound } from 'components/organisms/NotFound'
+
 import { Layout } from 'views/Layout'
 
-const NotFoundPage: React.FC<PageProps> = () => (
-  <Layout>
-    <Seo title="404: Not found" />
-    <h1>404: Not Found</h1>
-    <p>You just hit a route that doesn't exist... the sadness.</p>
-  </Layout>
-)
+import { useFormatQueryData } from 'hooks/useFormatQueryData/404'
+
+const NotFoundPage: React.FC<PageProps> = () => {
+  const { NOT_FOUND_DATA } = useFormatQueryData()
+
+  return (
+    <Layout>
+      <Seo
+        title="404 — Strona nie znaleziona | Soleil Studio"
+        description="Strona, której szukasz, nie istnieje lub została przeniesiona."
+        robots="noindex, nofollow"
+      />
+
+      <NotFound {...NOT_FOUND_DATA} />
+    </Layout>
+  )
+}
 
 export default NotFoundPage

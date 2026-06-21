@@ -6,8 +6,12 @@ import { PhotoFrame, PhotoFrameTone } from 'components/atoms/PhotoFrame'
 import {
   BodyMedium,
   BodySmall,
+  H200,
+  H300,
+  H400,
   H500,
   H600,
+  H700,
   H800,
   Text,
 } from 'components/atoms/Typography'
@@ -178,8 +182,11 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
 
         <CtaWrapper>
           <Text
-            $base={BodyMedium}
+            $base={H400}
+            $md={H500}
+            $lg={H700}
             $color="ink600"
+            $align="center"
             dangerouslySetInnerHTML={{ __html: ctaText }}
           />
           <ArrowButton to={ctaTo} label={ctaLabel} color="ink800" />

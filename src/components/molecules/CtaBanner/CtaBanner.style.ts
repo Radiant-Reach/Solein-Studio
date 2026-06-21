@@ -12,12 +12,13 @@ export const Wrapper = styled.section`
 export const Watermark = styled.div`
   position: absolute;
   inset: 0;
+  transform: translateY(50%);
   pointer-events: none;
 
   background-image: url(${LogoMarkCream});
   background-repeat: no-repeat;
-  background-position: right -60px center;
-  background-size: 380px;
+  background-position: right 30% center;
+  background-size: 430px;
   opacity: 0.08;
 `
 

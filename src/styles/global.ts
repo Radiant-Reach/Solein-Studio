@@ -24,6 +24,10 @@ const Global = css`
   body {
     font-family: ${({ theme }) => theme.fonts.primary}, serif;
   }
+
+  a {
+    text-decoration: none;
+  }
 `
 
 const GlobalStyles = createGlobalStyle`
