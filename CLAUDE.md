@@ -301,6 +301,225 @@ const SERVICES_DATA =
 
 ---
 
+## ACF & WordPress Content Principles
+
+This project's WordPress/ACF backend code lives in `wordpress/` at the repo
+root (separate from the Gatsby frontend in `src/`) — currently
+`wordpress/solein-studio.php`, a procedural file hooked into `acf/init`,
+mirroring the structure of a typical client theme/plugin functions file.
+
+### The hook is the field spec
+
+A page's `useFormatQueryData` hook (in its **static-object** form, before a
+GraphQL query exists) already defines the exact shape the CMS needs to
+produce. When writing ACF fields for a page:
+
+- Every top-level key in the hook's returned `*_DATA` object → one ACF field
+  (or a group of fields under a tab).
+- Every array → an ACF **repeater** field, with one sub-field per key in the
+  array's item shape.
+- Every nested object inside an array item → repeater sub-fields (one level
+  of nesting is normal; avoid going deeper than two levels — if a shape
+  needs that, it's a sign the inner shape should be its own CPT instead).
+
+### Choosing CPT vs. repeater vs. options page
+
+| Data shape | Use |
+| --- | --- |
+| Items with their own identity/detail page, or reused across more than one page's hook (e.g. `EVENTS` reused by `wydarzenia.tsx` + the event detail template; rooms reused by `home.tsx` + `nasze-sale.tsx` + the room detail template) | **Custom Post Type** (e.g. `Wydarzenie`, `Sala`) |
+| Content scoped to exactly one page, with no detail page of its own (FAQ items, pricing plan rows, possibility cards) | **Repeater field** on that page's own field group |
+| Site-wide facts with no detail page, referenced from more than one hook (contact info, social links, shared pricing tables, the studio equipment list) | **ACF Options Page** (`Ustawienia Globalne`) |
+
+When in doubt, check whether the *same* constant (in `src/constants/*.ts`)
+or prop shape is imported by more than one hook — that's the signal it
+belongs on a CPT or the options page rather than being duplicated per page.
+
+### CPT-driven pages use `gatsby-node.ts`, not static files under `src/pages/`
+
+Once content is a CPT (`Sala`, `Wydarzenie`, `Lokalizacja`, `Mozliwosc` —
+the post types that show up in WP's left-hand admin menu), its pages are
+generated dynamically, one per post, instead of hand-written as
+`src/pages/nasze-sale/sala-wschod.tsx`-style files per known slug. Adding a
+new WP post must produce a working page with **zero code changes** — that's
+the whole point of it being a CPT rather than a repeater.
+
+The pattern (adapted from a reference project, kept in `create/pages/`):
+
+1. `gatsby-node.ts`'s `createPages` API runs one GraphQL query fetching
+   just the `slug` of every node across all CPTs, then calls
+   `createCustomPages` from `create/pages/index.ts`.
+2. `create/pages/index.ts` delegates to one `create{X}Pages` function per
+   CPT (`sala.ts`, `wydarzenie.ts`, `lokalizacja.ts`, `mozliwosc.ts`).
+3. Each of those loops over its nodes and calls `actions.createPage({ path, component: path.resolve('./src/templates/X.tsx'), context: { slug: node.slug } })`.
+   Only the `slug` goes into `context` — not the full node data.
+4. The template in `src/templates/X.tsx` has its **own** `query($slug: String)`
+   GraphQL query (using the `$slug` from page context) and calls
+   `useFormatQueryData(data)` exactly like a static page does. This keeps
+   every page — static or CPT-generated — on the same hook+query
+   convention; only how the page's route gets created differs.
+5. The hook behind a CPT template (e.g. `useFormatQueryData/sala.tsx`) is
+   **generic** — one hook serves every post of that type, not one hook per
+   known slug. Seed strings for placeholder data (`pickFromSeed`) must be
+   derived from the real queried slug/title, never a hardcoded string,
+   since the same hook now runs for posts that don't exist yet at
+   write-time.
+
+### Nav/Footer link lists that enumerate a CPT are fetched live, not hardcoded
+
+Anywhere the UI lists "all posts of a CPT" — the `Navigation` organism's
+"Nasze sale" dropdown, the `Footer`'s "Możliwości wydarzeń" and location
+links — that list is fetched with `useStaticQuery` inside the component
+(see `Navigation.tsx`, `Footer.tsx`), not a hardcoded array in
+`*.constants.ts`. The constants file keeps only what's genuinely static
+(labels, non-CPT links); anything that should grow when an editor adds a
+new WP post is queried live so it appears without a deploy.
+
+### Don't add a manual `id`/`slug` field
+
+WordPress's own post slug is the canonical identifier — mirror the existing
+TS code, where `EventRecord.id` already doubles as the URL slug. Pull it via
+the post's `slug` in the GraphQL query; never add a redundant ACF text field
+for it. The same applies to repeater rows: `useFormatQueryData` already
+regenerates a stable `id` with `slugify(...)` from whichever field is the
+natural human-readable label (see the CMS example above) — don't store an
+id in ACF for repeater rows either.
+
+### Naming & GraphQL exposure
+
+- Prefix every CPT slug and options-page menu slug with `{$client_key}_`
+  (e.g. `soleil_studio_wydarzenie`) to avoid collisions with other
+  plugins/themes — same convention as the reference snippet this file grew
+  from.
+- Every CPT, options page, and `acf_add_local_field_group()` call must set
+  `show_in_graphql => true` plus an explicit `graphql_field_name` (or
+  `graphql_single_name`/`graphql_plural_name` for post types) written in
+  **camelCase** — that's the name `gatsby-source-wordpress` will actually
+  expose on `Queries.*`, so write it the way you'd want to read it in a hook
+  (`cmsData.page.cennikFields.heading`), not the PHP snake_case `name`.
+- Image/gallery fields use `'return_format' => 'id'`, not `'url'` or
+  `'array'` — that's what lets WPGraphQL for ACF resolve a real
+  `MediaItem` (with `srcSet`, alt text, etc.) instead of a bare string.
+
+### CTA buttons use one ACF `link` field, not a label/url pair
+
+Every `ctaLabel`/`ctaTo` pair in the TS props maps to **one** ACF field of
+type `link` (`ssx_cta_link_field()` in `wordpress/solein-studio.php`), not
+two separate fields (a `text` label + a `page_link`/`url`). A `link` field
+bundles `{title, url, target}` in one value and its picker handles both
+internal pages and external URLs — which matters because CTAs in this
+project point to both (most go to other pages, but `Instagram`/the booking
+iframe go to a full URL), and splitting label+url into two fields meant
+silently switching field types (`page_link` for internal, `url` for
+external) depending on the target. One field type now covers every case.
+
+This changes the GraphQL shape on the consuming end: a CTA arrives as one
+nested field (`cta.title`, `cta.url`, `cta.target`) instead of two flat
+strings (`ctaLabel`, `ctaUrl`). When migrating a hook from static to
+CMS-backed, map `cmsData...cta?.title` / `cmsData...cta?.url` into the
+existing flat `ctaLabel`/`ctaTo` prop shape inside the hook — the organism
+itself never needs to know the CMS field was nested.
+
+### Hard WordPress length limits — don't prefix CPT/taxonomy names with `$client_key`
+
+`register_post_type()` silently fails (no error, the CPT just never
+registers) if its name exceeds **20 characters**; `register_taxonomy()`
+caps at **32**. `{$client_key}_wydarzenie` alone is already 24 — too long
+the moment any client slug is more than a few characters. This is exactly
+how the `Wydarzenie` CPT went missing from the admin menu while `Sala`
+(under the limit) worked fine, with no error anywhere to point at it.
+
+Give CPT/taxonomy *names* (the string passed to `register_post_type`/
+`register_taxonomy`, not their labels, rewrite slugs, or GraphQL names —
+none of which have this limit) their own short prefix instead, e.g. `ssx_`
+in `wordpress/solein-studio.php` (`ssx_wydarzenie`, `ssx_sala`,
+`ssx_wydarzenie_typ`). `$client_key` stays in use for the options page menu
+slug and every field group's `graphql_field_name`, since neither has a
+length cap. When adding a new CPT/taxonomy, count the registered name's
+characters before testing in wp-admin — a CPT that doesn't appear after
+activating is the first thing to suspect.
+
+### Verify `menu_icon` against the real Dashicons list
+
+An invalid `dashicons-*` class (one that isn't in WordPress's actual
+Dashicons set) doesn't error either — the menu item just renders with no
+icon. `dashicons-door-open` doesn't exist and was silently dropped for the
+`Sala` CPT; `dashicons-store` (confirmed from this project's own reference
+snippet) does. Cross-check any new icon name against
+https://developer.wordpress.org/resource/dashicons/ before using it,
+rather than guessing a plausible-sounding class name.
+
+### Page-level field groups: `location` for wp-admin, `graphql_types` for the schema
+
+Each page-level group is scoped in `wp-admin` via `location`: `post_type ==
+page` AND `page_template == "{slug}.php"`, matching the virtual page
+template registered in `theme_page_templates`. This is what makes the
+"Cennik" field group show up *only* on the page whose Page Attributes →
+Template is set to "Cennik", etc. — exactly what an editor expects.
+
+WPGraphQL for ACF, however, infers a field group's GraphQL type from
+`location` too, and only knows how to do that for a *plain* `post_type`
+rule — the moment a `page_template` condition is ANDed alongside it, the
+plugin gives up on the mapping entirely (confirmed by testing live: the
+group vanished from `WpPage`'s `*Fields` key the instant `page_template`
+was added, while ACF's own admin UI matched the combined rule correctly
+the whole time). Dropping `page_template` "fixed" GraphQL exposure at the
+cost of every one of these 8 groups appearing on *every* Page's edit
+screen — pure wp-admin clutter, since the frontend was always correct
+(each Gatsby template selects its own field group by name from whichever
+`wpPage` it queries by slug).
+
+The real fix is `graphql_types`: an explicit, separate setting that tells
+WPGraphQL for ACF which GraphQL type(s) to expose a group on, independent
+of whatever `location` says. `location` stays precise (admin scoping via
+`page_template` is restored); `graphql_types => ['Page']` makes the
+mapping to the `Page` GraphQL type explicit instead of inferred, so the
+group reaches the schema regardless of how complex `location` is:
+
+```php
+$page_location = function ($template) {
+    return array(
+        array(
+            array('param' => 'post_type', 'operator' => '==', 'value' => 'page'),
+            array('param' => 'page_template', 'operator' => '==', 'value' => $template),
+        ),
+    );
+};
+$page_graphql_types = array('Page');
+
+acf_add_local_field_group(array(
+    'graphql_field_name' => 'cennikFields',
+    'show_in_graphql'    => true,
+    'graphql_types'      => $page_graphql_types,
+    'location'           => $page_location("{$client_key}-cennik.php"),
+    // ...
+));
+```
+
+When adding a field group whose `location` rule WPGraphQL for ACF can't
+cleanly infer from (anything beyond a single `post_type`/CPT rule — a
+page template, a specific post, a taxonomy term, etc.), set `graphql_types`
+explicitly rather than simplifying the `location` rule to work around it.
+
+### Keep structural copy out of ACF
+
+Only fields whose value genuinely differs per page/post belong in ACF —
+the same "no hardcoded strings" spirit as the frontend, but it cuts both
+ways. Repeated UI labels that never vary by content (`"W cenie"`,
+`"Wszystko, czego potrzebujesz"`, aria-label strings) stay hardcoded in the
+React component, exactly like today. Don't manufacture an ACF field just
+because a hook happens to have a key for it — check whether the value is
+the same across every page/post before deciding it's editorial content.
+
+### Migrating a hook from static to CMS-backed
+
+Don't delete a hook's static fallback object when you add the matching ACF
+fields — follow the existing "When a page has a GraphQL query" pattern:
+the hook starts accepting `cmsData`, and maps ACF fields into the same prop
+shape the static version already produced. The organism never needs to
+change.
+
+---
+
 ## Page Template Structure
 
 ```tsx

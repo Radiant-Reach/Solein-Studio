@@ -31,7 +31,7 @@ const GATSBY_REQUIRED_RULES: string = path.join(
 const SITE_URL =
   process.env.NODE_ENV === 'development'
     ? `http://localhost:8000`
-    : 'https://www.example.com' // TODO: Change url
+    : 'https://soleilstudio.pl/' // TODO: Change url
 
 const OMIT_PATHS = ['/404', '/preview']
 

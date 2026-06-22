@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -9,8 +9,10 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/wydarzenia'
 
-const WydarzeniaPage: React.FC<PageProps> = () => {
-  const { EVENTS_BOARD_DATA } = useFormatQueryData()
+const WydarzeniaPage: React.FC<PageProps<Queries.WydarzeniaQuery>> = ({
+  data,
+}) => {
+  const { EVENTS_BOARD_DATA } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -25,3 +27,44 @@ const WydarzeniaPage: React.FC<PageProps> = () => {
 }
 
 export default WydarzeniaPage
+
+export const query = graphql`
+  query Wydarzenia {
+    page: wpPage(slug: { eq: "wydarzenia" }) {
+      wydarzeniaFields {
+        eyebrow
+        heading
+        lead
+      }
+    }
+    events: allWpWydarzenie(sort: { wydarzenieFields: { date: ASC } }) {
+      nodes {
+        slug
+        title
+        wydarzenieFields {
+          date
+          description
+          photo {
+            altText
+            localFile {
+              childImageSharp {
+                gatsbyImageData
+              }
+            }
+          }
+        }
+        wydarzenieTypy {
+          nodes {
+            slug
+          }
+        }
+      }
+    }
+    types: allWpWydarzenieTyp {
+      nodes {
+        slug
+        name
+      }
+    }
+  }
+`

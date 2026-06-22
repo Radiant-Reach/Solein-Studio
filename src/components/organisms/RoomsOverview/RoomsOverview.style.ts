@@ -52,14 +52,14 @@ export const RoomCard = styled(Link)`
   }
 `
 
-export const RoomTag = styled.span<{ $tone: 'cream' | 'orange' }>`
+export const RoomTag = styled.span<{ $color: string }>`
   position: absolute;
   top: ${rem(14)};
   left: ${rem(14)};
 
   padding: ${rem(6)} ${rem(14)};
   border-radius: 999px;
-  background-color: ${({ theme, $tone }) => theme.colors[$tone]};
+  background-color: ${({ $color }) => $color};
 `
 
 export const RoomCardBody = styled.div`

@@ -29,9 +29,13 @@ export const PricingRules: React.FC<PricingRulesProps> = ({
       <RulesList>
         {rules.map((rule) => (
           <li key={rule.id}>
-            <Text as="span" $base={BodySmall} $color="ink500" $align="center">
-              {rule.text}
-            </Text>
+            <Text
+              as="span"
+              $base={BodySmall}
+              $color="ink500"
+              $align="center"
+              dangerouslySetInnerHTML={{ __html: rule.text }}
+            />
           </li>
         ))}
       </RulesList>
@@ -39,9 +43,13 @@ export const PricingRules: React.FC<PricingRulesProps> = ({
       <NoticeDivider />
 
       <Notice>
-        <Text as="span" $base={BodySmall} $color="ink800" $align="center">
-          {notice}
-        </Text>
+        <Text
+          as="span"
+          $base={BodySmall}
+          $color="ink800"
+          $align="center"
+          dangerouslySetInnerHTML={{ __html: notice }}
+        />
       </Notice>
     </Container>
   </RulesSection>

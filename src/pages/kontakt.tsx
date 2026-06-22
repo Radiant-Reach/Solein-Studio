@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -9,8 +9,8 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/kontakt'
 
-const KontaktPage: React.FC<PageProps> = () => {
-  const { CONTACT_DATA } = useFormatQueryData()
+const KontaktPage: React.FC<PageProps<Queries.KontaktQuery>> = ({ data }) => {
+  const { CONTACT_DATA } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -25,3 +25,27 @@ const KontaktPage: React.FC<PageProps> = () => {
 }
 
 export default KontaktPage
+
+export const query = graphql`
+  query Kontakt {
+    page: wpPage(slug: { eq: "kontakt" }) {
+      kontaktFields {
+        eyebrow
+        heading
+        lead
+      }
+    }
+    wp {
+      ustawieniaGlobalne {
+        kontakt {
+          email
+          phone
+          addressLine1
+          addressLine2
+          hours
+          parkingNote
+        }
+      }
+    }
+  }
+`

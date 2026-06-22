@@ -10,6 +10,8 @@ import {
   Text,
 } from 'components/atoms/Typography'
 
+import { ImageType } from 'types/page'
+
 import {
   BackLink,
   Description,
@@ -32,6 +34,7 @@ export type EventDetailProps = {
   location?: string
   description: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export const EventDetail: React.FC<EventDetailProps> = ({
@@ -45,6 +48,7 @@ export const EventDetail: React.FC<EventDetailProps> = ({
   location,
   description,
   tone,
+  image,
 }) => (
   <Wrapper>
     <Container $variant="wide">
@@ -55,7 +59,7 @@ export const EventDetail: React.FC<EventDetailProps> = ({
 
       <DetailGrid>
         <DetailPhoto>
-          <PhotoFrame tone={tone} />
+          <PhotoFrame tone={tone} image={image} />
         </DetailPhoto>
 
         <DetailInfo>

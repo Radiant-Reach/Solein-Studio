@@ -1,7 +1,10 @@
-import React from 'react'
+import { graphql, useStaticQuery } from 'gatsby'
+import React, { useMemo } from 'react'
 
 import { Icon } from 'components/atoms/Icon'
 import { BodySmall, Text } from 'components/atoms/Typography'
+
+import { NavLinkItem } from 'types/domain'
 
 import PinIcon from 'assets/images/icons/icon-pin.png'
 import FacebookIcon from 'assets/images/icons/social/facebook.png'
@@ -10,8 +13,6 @@ import InstagramIcon from 'assets/images/icons/social/instagram.png'
 import {
   BRAND_BLURB,
   CONTACT,
-  EVENT_LINKS,
-  LOCATION_LINK,
   LOGO_FULL_CREAM_SRC,
   NAV_LINKS,
   SOCIAL_LINKS,
@@ -57,6 +58,43 @@ const ColumnHeading: React.FC<{ title: string }> = ({ title }) => (
 export const Footer: React.FC = () => {
   const phoneHref = `tel:${CONTACT.phone.replace(/\s/g, '')}`
 
+  const cmsData = useStaticQuery<Queries.FooterLinksQuery>(graphql`
+    query FooterLinks {
+      possibilities: allWpMozliwosc(sort: { title: ASC }) {
+        nodes {
+          slug
+          title
+        }
+      }
+      locations: allWpLokalizacja(sort: { title: ASC }) {
+        nodes {
+          slug
+          title
+        }
+      }
+    }
+  `)
+
+  const eventLinks: NavLinkItem[] = useMemo(
+    () =>
+      cmsData.possibilities?.nodes?.map((node) => ({
+        id: node.slug!,
+        name: node.title!,
+        path: `/wydarzenia/${node.slug}`,
+      }))! || [],
+    [cmsData]
+  )
+
+  const locationLinks: NavLinkItem[] = useMemo(
+    () =>
+      cmsData.locations?.nodes?.map((node) => ({
+        id: node.slug!,
+        name: `${node.title} →`,
+        path: `/lokacje/${node.slug}`,
+      }))! || [],
+    [cmsData]
+  )
+
   return (
     <Wrapper>
       <InnerWrapper $variant="wide">
@@ -78,14 +116,14 @@ export const Footer: React.FC = () => {
               />
             </Blurb>
 
-            <FooterLink to={LOCATION_LINK.path} $emphasis>
-              <LocationLinkContent>
-                <LocationPinIcon src={PinIcon} size={20} />
-                <span
-                  dangerouslySetInnerHTML={{ __html: LOCATION_LINK.name }}
-                />
-              </LocationLinkContent>
-            </FooterLink>
+            {locationLinks.map((link) => (
+              <FooterLink key={link.id} to={link.path} $emphasis>
+                <LocationLinkContent>
+                  <LocationPinIcon src={PinIcon} size={20} />
+                  <span dangerouslySetInnerHTML={{ __html: link.name }} />
+                </LocationLinkContent>
+              </FooterLink>
+            ))}
           </Column>
 
           <Column>
@@ -101,7 +139,7 @@ export const Footer: React.FC = () => {
 
           <Column>
             <ColumnHeading title="Możliwości wydarzeń" />
-            {EVENT_LINKS.map((link) => (
+            {eventLinks.map((link) => (
               <FooterLink
                 key={link.id}
                 to={link.path}

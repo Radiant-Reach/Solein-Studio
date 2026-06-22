@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -13,14 +13,14 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/cennik'
 
-const CennikPage: React.FC<PageProps> = () => {
+const CennikPage: React.FC<PageProps<Queries.CennikQuery>> = ({ data }) => {
   const {
     PRICING_HERO_DATA,
     PRICING_PLANS_DATA,
     PRICING_ADDONS_DATA,
     EQUIPMENT_DATA,
     PRICING_RULES_DATA,
-  } = useFormatQueryData()
+  } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -39,3 +39,61 @@ const CennikPage: React.FC<PageProps> = () => {
 }
 
 export default CennikPage
+
+export const query = graphql`
+  query Cennik {
+    page: wpPage(slug: { eq: "cennik" }) {
+      cennikFields {
+        scriptLabel
+        heading
+        lead
+        addonsHeading
+        makeupTitle
+        makeupPrice
+        makeupUnit
+        makeupNote
+        makeupDescription
+        extraNotes {
+          text
+        }
+        quoteHeading
+        quoteItems {
+          text
+        }
+        quoteCta {
+          title
+          url
+        }
+        rules {
+          text
+        }
+        notice
+      }
+    }
+
+    wp {
+      ustawieniaGlobalne {
+        cennikWspolny {
+          pojedynczaSala {
+            label
+            price
+            highlight
+          }
+          caleStudio {
+            label
+            price
+            highlight
+          }
+        }
+        wyposazenie {
+          categories {
+            title
+            items {
+              text
+            }
+          }
+        }
+      }
+    }
+  }
+`

@@ -14,6 +14,8 @@ import {
 
 import { Lightbox } from 'components/molecules/Lightbox'
 
+import { ImageType } from 'types/page'
+
 import {
   BackLink,
   HeroButtons,
@@ -33,6 +35,7 @@ export type RoomHeroProps = {
   name: string
   description: string
   heroTone: PhotoFrameTone
+  heroImage?: ImageType
   primaryCtaLabel: string
   primaryCtaTo: string
   secondaryCtaLabel: string
@@ -46,6 +49,7 @@ export const RoomHero: React.FC<RoomHeroProps> = ({
   name,
   description,
   heroTone,
+  heroImage,
   primaryCtaLabel,
   primaryCtaTo,
   secondaryCtaLabel,
@@ -111,7 +115,7 @@ export const RoomHero: React.FC<RoomHeroProps> = ({
               aria-label="Powiększ zdjęcie"
               onClick={() => setIsLightboxOpen(true)}
             >
-              <PhotoFrame tone={heroTone} />
+              <PhotoFrame tone={heroTone} image={heroImage} />
             </HeroPhotoButton>
           </HeroPhoto>
         </HeroGrid>

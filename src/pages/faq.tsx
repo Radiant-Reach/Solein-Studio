@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -11,8 +11,8 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/faq'
 
-const FaqPage: React.FC<PageProps> = () => {
-  const { FAQ_DATA, CTA_BANNER_DATA } = useFormatQueryData()
+const FaqPage: React.FC<PageProps<Queries.FaqQuery>> = ({ data }) => {
+  const { FAQ_DATA, CTA_BANNER_DATA } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -28,3 +28,27 @@ const FaqPage: React.FC<PageProps> = () => {
 }
 
 export default FaqPage
+
+export const query = graphql`
+  query Faq {
+    page: wpPage(slug: { eq: "faq" }) {
+      faqFields {
+        eyebrow
+        heading
+        lead
+        items {
+          question
+          answer
+        }
+        ctaBanner {
+          heading
+          text
+          cta {
+            title
+            url
+          }
+        }
+      }
+    }
+  }
+`

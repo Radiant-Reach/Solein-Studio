@@ -4,137 +4,140 @@ import { PHOTO_FRAME_TONES } from 'components/atoms/PhotoFrame'
 
 import { CtaBannerProps } from 'components/molecules/CtaBanner'
 
-import { EventsTeaserProps } from 'components/organisms/EventsTeaser'
+import {
+  EventsTeaserItem,
+  EventsTeaserProps,
+} from 'components/organisms/EventsTeaser'
 import { GalleryTeaserProps } from 'components/organisms/GalleryTeaser'
 import { HomeHeroProps } from 'components/organisms/HomeHero'
-import { InstagramTeaserProps } from 'components/organisms/InstagramTeaser'
 import { RoomsOverviewProps } from 'components/organisms/RoomsOverview'
 import { StudioIntroProps } from 'components/organisms/StudioIntro'
 
-import { SOCIAL_LINKS } from 'constants/brand'
-import { EVENTS } from 'constants/events'
-import { ROOM_OVERVIEW_CARDS } from 'constants/roomsOverview'
-
+import { toImage } from 'utils/format/toImage'
 import { pickFromSeed } from 'utils/pickFromSeed'
 import slugify from 'utils/slugify'
-
-const EVENT_TYPE_LABELS = {
-  zewnetrzne: 'Zewnętrzne',
-  solein: 'Solein',
-} as const
 
 const UPCOMING_EVENTS_LIMIT = 3
 
 const formatEventDate = (date: string) =>
   new Date(date).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' })
 
-export const useFormatQueryData = () => {
+export const useFormatQueryData = (cmsData: Queries.HomeQuery) => {
   return useMemo(() => {
+    const FIELDS = cmsData.page?.homeFields!
+    const INTRO = FIELDS.studioIntro!
+
     const HOME_HERO_DATA = {
       leftTone: pickFromSeed(slugify('Home hero left'), PHOTO_FRAME_TONES),
+      leftImage: toImage(FIELDS.heroLeftPhoto, 'Soleil Studio'),
       rightTone: pickFromSeed(slugify('Home hero right'), PHOTO_FRAME_TONES),
-      ctaLabel: 'Zarezerwuj',
-      ctaTo: '/kontakt',
+      rightImage: toImage(FIELDS.heroRightPhoto, 'Soleil Studio'),
+      ctaLabel: FIELDS.heroCta?.title!,
+      ctaTo: FIELDS.heroCta?.url!,
     } satisfies HomeHeroProps
 
     const ROOMS_OVERVIEW_DATA = {
-      eyebrow: 'Nasze sale',
-      heading: 'Dwa wnętrza, <span class="styled">jedno</span> słońce',
-      rooms: ROOM_OVERVIEW_CARDS.map((card) => ({
-        ...card,
-        tone: pickFromSeed(slugify(`${card.title} hero`), PHOTO_FRAME_TONES),
-        ctaLabel: 'Poznaj salę',
-      })),
+      eyebrow: FIELDS.roomsEyebrow!,
+      heading: FIELDS.roomsHeading!,
+      rooms:
+        cmsData.rooms?.nodes?.map((sala) => ({
+          id: sala.slug!,
+          tone: pickFromSeed(slugify(`${sala.title} hero`), PHOTO_FRAME_TONES),
+          image: toImage(sala.salaFields?.heroPhoto, sala.title!),
+          tagLabel: sala.salaFields?.tagline!,
+          tagColor: sala.salaFields?.tagColor!,
+          eyebrow: sala.salaFields?.capacityLabel!,
+          title: sala.title!,
+          description: sala.salaFields?.shortDescription!,
+          ctaLabel: 'Poznaj salę',
+          ctaTo: `/nasze-sale/${sala.slug}`,
+        }))! || [],
     } satisfies RoomsOverviewProps
 
+    const todayIso = new Date().toISOString().slice(0, 10)
+
     const EVENTS_TEASER_DATA = {
-      eyebrow: 'Co u nas',
-      heading: 'Wydarzenia u <span class="styled">nas</span>',
-      lead: 'Przegląd nadchodzących wydarzeń własnych i organizowanych przez gości studia.',
-      events: [...EVENTS]
-        .sort((a, b) => a.date.localeCompare(b.date))
-        .filter((event) => event.date >= new Date().toISOString().slice(0, 10))
-        .slice(0, UPCOMING_EVENTS_LIMIT)
-        .map((event) => ({
-          id: event.id,
-          title: event.title,
-          date: formatEventDate(event.date),
-          type: event.type,
-          typeLabel: EVENT_TYPE_LABELS[event.type],
-          tone: pickFromSeed(event.id, PHOTO_FRAME_TONES),
-        })),
-      ctaLabel: 'Zobacz wszystkie wydarzenia',
-      ctaTo: '/wydarzenia',
+      eyebrow: FIELDS.eventsEyebrow!,
+      heading: FIELDS.eventsHeading!,
+      lead: FIELDS.eventsLead!,
+      events:
+        cmsData.events?.nodes
+          ?.filter((event) => event.wydarzenieFields?.date! >= todayIso)
+          .slice(0, UPCOMING_EVENTS_LIMIT)
+          .map((event) => {
+            const term = event.wydarzenieTypy?.nodes?.[0]
+
+            return {
+              id: event.slug!,
+              title: event.title!,
+              date: formatEventDate(event.wydarzenieFields?.date!),
+              type: term?.slug as EventsTeaserItem['type'],
+              typeLabel: term?.name!,
+              tone: pickFromSeed(event.slug!, PHOTO_FRAME_TONES),
+              image: toImage(event.wydarzenieFields?.photo, event.title!),
+            }
+          })! || [],
+      emptyLabel: 'Brak zaplanowanych wydarzeń.',
+      ctaLabel: FIELDS.eventsCta?.title!,
+      ctaTo: FIELDS.eventsCta?.url!,
     } satisfies EventsTeaserProps
 
+    const HERO_PHOTOS =
+      INTRO.heroPhotos?.map((photo, index) => {
+        const id = slugify(`Home hero photo ${index + 1}`)
+        return {
+          id,
+          tone: pickFromSeed(id, PHOTO_FRAME_TONES),
+          image: toImage(photo, INTRO.heading!),
+        }
+      }) || []
+
     const STUDIO_INTRO_DATA = {
-      eyebrow: 'Lokalizacja',
-      heading: 'Poznaj Studio <span class="styled">Soleil</span>',
-      lead: 'W zabytkowej kamienicy we Wrocławiu znajduje się niemal 100 m² przestrzeni, w której każdy detal daje przestrzeń do tworzenia.',
-      paragraphs: [
-        {
-          id: slugify('Wysokie sufity akcenty'),
-          text: 'Wysokie sufity i przemyślane akcenty dekoracyjne pozwalają poczuć komfort i swobodę pracy.',
-        },
-      ],
-      heroPhotos: [
-        slugify('Studio wysokie sufity'),
-        slugify('Studio francuskie drzwi'),
-        slugify('Studio minimalistyczne wnetrze'),
-      ].map((id) => ({ id, tone: pickFromSeed(id, PHOTO_FRAME_TONES) })),
-      features: [
-        {
-          id: slugify('Gdzie jestesmy home'),
-          eyebrow: 'Gdzie jesteśmy',
-          heading: 'W samym sercu <span class="styled" >Wrocławia</span>',
-          body: 'Studio znajduje się zaledwie kilka minut od Galerii Dominikańskiej, Dworca PKP i Bastionu Sakwowego, z wygodnym parkowaniem tuż przy budynku.',
-          tone: pickFromSeed(slugify('Gdzie jestesmy home'), PHOTO_FRAME_TONES),
-        },
-        {
-          id: slugify('O Soleil home'),
-          eyebrow: 'O Soleil',
-          heading: 'Wnętrze, które inspiruje',
-          body: 'Studio w zabytkowej kamienicy z wysokimi sufitami i francuskimi drzwiami, które wypełniają wnętrze naturalnym światłem.',
-          tone: pickFromSeed(slugify('O Soleil home'), PHOTO_FRAME_TONES),
-        },
-      ],
-      ctaText: 'Chcesz dowiedzieć się więcej o studio?',
-      ctaLabel: 'Poznaj Studio Soleil',
-      ctaTo: '/lokacje/wroclaw',
+      eyebrow: INTRO.eyebrow!,
+      heading: INTRO.heading!,
+      lead: INTRO.lead!,
+      paragraphs:
+        INTRO.paragraphs?.map((paragraph) => ({
+          id: slugify(paragraph?.text!.slice(0, 40)),
+          text: paragraph?.text!,
+        }))! || [],
+      heroPhotos: HERO_PHOTOS,
+      features:
+        INTRO.features?.map((feature) => ({
+          id: slugify(feature?.heading!),
+          eyebrow: feature?.eyebrow!,
+          heading: feature?.heading!,
+          body: feature?.body!,
+          tone: pickFromSeed(slugify(feature?.heading!), PHOTO_FRAME_TONES),
+          image: toImage(feature?.photo, feature?.heading!),
+        }))! || [],
+      ctaText: INTRO.ctaText!,
+      ctaLabel: INTRO.cta?.title!,
+      ctaTo: INTRO.cta?.url!,
     } satisfies StudioIntroProps
 
     const GALLERY_TEASER_DATA = {
-      eyebrow: 'Galeria',
-      heading: 'Studio w <span class="styled">kadrach</span>',
-      lead: 'Zajrzyj do środka Soleil Studio — zdjęcia z sal Wschód i Zachód oraz wydarzeń.',
-      photos: Array.from({ length: 12 }, (_, index) =>
-        slugify(`Home galeria ${index + 1}`)
-      ).map((id) => ({ id, tone: pickFromSeed(id, PHOTO_FRAME_TONES) })),
-      ctaLabel: 'Zobacz galerię',
-      ctaTo: '/galeria',
+      eyebrow: FIELDS.galleryEyebrow!,
+      heading: FIELDS.galleryHeading!,
+      lead: FIELDS.galleryLead!,
+      photos:
+        FIELDS.galleryPhotos?.map((photo, index) => {
+          const id = slugify(`Home galeria ${index + 1}`)
+          return {
+            id,
+            tone: pickFromSeed(id, PHOTO_FRAME_TONES),
+            image: toImage(photo, FIELDS.galleryHeading!),
+          }
+        }) || [],
+      ctaLabel: FIELDS.galleryCta?.title!,
+      ctaTo: FIELDS.galleryCta?.url!,
     } satisfies GalleryTeaserProps
 
-    const INSTAGRAM_TEASER_DATA = {
-      eyebrow: 'Instagram',
-      heading: 'Soleil na <span class="styled">Instagramie</span>',
-      handle: '@soleilstudio.wro',
-      photos: [
-        slugify('Home instagram 1'),
-        slugify('Home instagram 2'),
-        slugify('Home instagram 3'),
-        slugify('Home instagram 4'),
-        slugify('Home instagram 5'),
-        slugify('Home instagram 6'),
-      ].map((id) => ({ id, tone: pickFromSeed(id, PHOTO_FRAME_TONES) })),
-      ctaLabel: 'Obserwuj nas na Instagramie',
-      ctaTo: SOCIAL_LINKS.find((social) => social.id === 'instagram')!.to,
-    } satisfies InstagramTeaserProps
-
     const CTA_BANNER_DATA = {
-      heading: 'Zarezerwuj swój dzień w słońcu',
-      text: 'Napisz do nas — odpowiemy w ciągu 24 godzin i pomożemy dobrać salę do Twojego wydarzenia.',
-      ctaLabel: 'Skontaktuj się',
-      ctaTo: '/kontakt',
+      heading: FIELDS.ctaBanner?.heading!,
+      text: FIELDS.ctaBanner?.text!,
+      ctaLabel: FIELDS.ctaBanner?.cta?.title!,
+      ctaTo: FIELDS.ctaBanner?.cta?.url!,
     } satisfies CtaBannerProps
 
     return {
@@ -143,8 +146,7 @@ export const useFormatQueryData = () => {
       EVENTS_TEASER_DATA,
       STUDIO_INTRO_DATA,
       GALLERY_TEASER_DATA,
-      INSTAGRAM_TEASER_DATA,
       CTA_BANNER_DATA,
     }
-  }, [])
+  }, [JSON.stringify(cmsData)])
 }

@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -9,8 +9,10 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/nasze-sale'
 
-const NaszeSalePage: React.FC<PageProps> = () => {
-  const { ROOMS_OVERVIEW_DATA } = useFormatQueryData()
+const NaszeSalePage: React.FC<PageProps<Queries.NaszeSaleQuery>> = ({
+  data,
+}) => {
+  const { ROOMS_OVERVIEW_DATA } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -25,3 +27,34 @@ const NaszeSalePage: React.FC<PageProps> = () => {
 }
 
 export default NaszeSalePage
+
+export const query = graphql`
+  query NaszeSale {
+    page: wpPage(slug: { eq: "nasze-sale" }) {
+      naszeSaleFields {
+        eyebrow
+        heading
+      }
+    }
+    rooms: allWpSala(sort: { title: ASC }) {
+      nodes {
+        slug
+        title
+        salaFields {
+          tagline
+          tagColor
+          capacityLabel
+          shortDescription
+          heroPhoto {
+            altText
+            localFile {
+              childImageSharp {
+                gatsbyImageData
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`

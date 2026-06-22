@@ -10,6 +10,8 @@ import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import { useOutsideClick } from 'hooks/useOutsideClick'
 
+import { ImageType } from 'types/page'
+
 import { ReactComponent as ChevronDown } from 'assets/icons/arrows/chevron-down.svg'
 
 import {
@@ -55,6 +57,7 @@ export type EventEntry = {
   date: string
   type: EventCategory
   tone: PhotoFrameTone
+  image?: ImageType
   description?: string
 }
 
@@ -311,7 +314,7 @@ export const EventsBoard: React.FC<EventsBoardProps> = ({
                   return (
                     <EventCard key={event.id} to={`/wydarzenia/${event.id}`}>
                       <EventCardPhoto>
-                        <PhotoFrame tone={event.tone} />
+                        <PhotoFrame tone={event.tone} image={event.image} />
                       </EventCardPhoto>
 
                       <EventCardBody>

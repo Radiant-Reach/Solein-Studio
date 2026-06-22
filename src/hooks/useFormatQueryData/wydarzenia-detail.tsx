@@ -4,14 +4,9 @@ import { PHOTO_FRAME_TONES } from 'components/atoms/PhotoFrame'
 
 import { EventDetailProps } from 'components/organisms/EventDetail'
 
-import { EVENTS } from 'constants/events'
-
+import { toImage } from 'utils/format/toImage'
 import { pickFromSeed } from 'utils/pickFromSeed'
-
-const TYPE_LABELS = {
-  zewnetrzne: 'Zewnętrzne',
-  solein: 'Solein',
-} as const
+import slugify from 'utils/slugify'
 
 const formatLongDate = (date: string) =>
   new Date(date).toLocaleDateString('pl-PL', {
@@ -20,27 +15,28 @@ const formatLongDate = (date: string) =>
     year: 'numeric',
   })
 
-export const useFormatQueryData = (slug: string) => {
+// One generic hook serves every "Wydarzenie" post (the template is created
+// once per post by create/pages/wydarzenie.ts) — the page only ever exists
+// for a real slug, so there's no "not found" branch to handle here.
+export const useFormatQueryData = (cmsData: Queries.WydarzenieQuery) => {
   return useMemo(() => {
-    const record = EVENTS.find((event) => event.id === slug)
-
-    if (!record) {
-      return { EVENT_DETAIL_DATA: null }
-    }
+    const record = cmsData.wydarzenie!
+    const term = record.wydarzenieTypy?.nodes?.[0]
 
     const EVENT_DETAIL_DATA = {
       backTo: '/wydarzenia',
       backLabel: 'Wszystkie wydarzenia',
-      type: record.type,
-      typeLabel: TYPE_LABELS[record.type],
-      title: record.title,
-      date: formatLongDate(record.date),
-      time: record.time,
-      location: record.location,
-      description: record.longDescription,
-      tone: pickFromSeed(record.id, PHOTO_FRAME_TONES),
+      type: term?.slug as EventDetailProps['type'],
+      typeLabel: term?.name!,
+      title: record.title!,
+      date: formatLongDate(record.wydarzenieFields?.date!),
+      time: record.wydarzenieFields?.time!,
+      location: record.wydarzenieFields?.location!,
+      description: record.wydarzenieFields?.longDescription!,
+      tone: pickFromSeed(slugify(record.title!), PHOTO_FRAME_TONES),
+      image: toImage(record.wydarzenieFields?.photo, record.title!),
     } satisfies EventDetailProps
 
     return { EVENT_DETAIL_DATA }
-  }, [slug])
+  }, [JSON.stringify(cmsData)])
 }

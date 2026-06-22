@@ -8,6 +8,8 @@ import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 import { Swiper } from 'components/molecules/Swiper'
 
+import { ImageType } from 'types/page'
+
 import {
   HeaderRow,
   LightboxPhoto,
@@ -18,6 +20,7 @@ import {
 export type GalleryTeaserPhoto = {
   id: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export type GalleryTeaserProps = {
@@ -61,7 +64,7 @@ export const GalleryTeaser: React.FC<GalleryTeaserProps> = ({
               aria-label="Powiększ zdjęcie"
               onClick={() => setActiveIndex(index)}
             >
-              <PhotoFrame tone={photo.tone} />
+              <PhotoFrame tone={photo.tone} image={photo.image} />
             </PhotoTile>
           )}
         />
@@ -91,7 +94,7 @@ export const GalleryTeaser: React.FC<GalleryTeaserProps> = ({
       >
         {activePhoto && (
           <LightboxPhoto>
-            <PhotoFrame tone={activePhoto.tone} />
+            <PhotoFrame tone={activePhoto.tone} image={activePhoto.image} />
           </LightboxPhoto>
         )}
       </Lightbox>

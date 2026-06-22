@@ -19,6 +19,16 @@ export const HeaderRow = styled.div`
   margin-bottom: ${rem(40)};
 `
 
+export const EmptyState = styled.div`
+  padding: ${rem(40)};
+  margin-bottom: ${rem(40)};
+  text-align: center;
+
+  background-color: ${({ theme }) => theme.colors.sand50};
+  border: 1px solid ${({ theme }) => theme.colors.espresso1F};
+  border-radius: ${rem(20)};
+`
+
 export const EventsGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr;

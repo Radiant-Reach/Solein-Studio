@@ -19,6 +19,8 @@ import {
 import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
+import { ImageType } from 'types/page'
+
 import {
   CtaWrapper,
   FeaturePhoto,
@@ -41,6 +43,7 @@ export type StudioParagraph = {
 export type StudioPhoto = {
   id: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export type StudioFeature = {
@@ -49,6 +52,7 @@ export type StudioFeature = {
   heading: string
   body: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export type StudioIntroProps = {
@@ -105,7 +109,11 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
 
   const galleryPhotos: StudioPhoto[] = [
     ...heroPhotos,
-    ...features.map((feature) => ({ id: feature.id, tone: feature.tone })),
+    ...features.map((feature) => ({
+      id: feature.id,
+      tone: feature.tone,
+      image: feature.image,
+    })),
   ]
 
   const activePhoto = activeIndex !== null ? galleryPhotos[activeIndex] : null
@@ -138,7 +146,7 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
                 aria-label="Powiększ zdjęcie"
                 onClick={() => setActiveIndex(index)}
               >
-                <PhotoFrame tone={photo.tone} />
+                <PhotoFrame tone={photo.tone} image={photo.image} />
               </PhotoTileButton>
             </HeroPhotoTile>
           ))}
@@ -158,7 +166,7 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
                       aria-label="Powiększ zdjęcie"
                       onClick={() => setActiveIndex(galleryIndex)}
                     >
-                      <PhotoFrame tone={feature.tone} />
+                      <PhotoFrame tone={feature.tone} image={feature.image} />
                     </PhotoTileButton>
                   </FeaturePhoto>
                 </>
@@ -170,7 +178,7 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
                       aria-label="Powiększ zdjęcie"
                       onClick={() => setActiveIndex(galleryIndex)}
                     >
-                      <PhotoFrame tone={feature.tone} />
+                      <PhotoFrame tone={feature.tone} image={feature.image} />
                     </PhotoTileButton>
                   </FeaturePhoto>
                   <FeatureTextBlock feature={feature} />
@@ -217,7 +225,7 @@ export const StudioIntro: React.FC<StudioIntroProps> = ({
       >
         {activePhoto && (
           <LightboxPhoto>
-            <PhotoFrame tone={activePhoto.tone} />
+            <PhotoFrame tone={activePhoto.tone} image={activePhoto.image} />
           </LightboxPhoto>
         )}
       </Lightbox>

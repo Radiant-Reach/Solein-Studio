@@ -3,7 +3,7 @@ import slugify from 'utils/slugify'
 export type RoomOverviewCardData = {
   id: string
   tagLabel: string
-  tagTone: 'cream' | 'orange'
+  tagColor: string
   eyebrow: string
   title: string
   description: string
@@ -14,7 +14,7 @@ export const ROOM_OVERVIEW_CARDS: RoomOverviewCardData[] = [
   {
     id: slugify('Sala Wschod overview'),
     tagLabel: 'Poranne światło',
-    tagTone: 'cream',
+    tagColor: '#FCF9D9',
     eyebrow: 'Do 30 osób',
     title: 'Sala Wschód',
     description:
@@ -24,7 +24,7 @@ export const ROOM_OVERVIEW_CARDS: RoomOverviewCardData[] = [
   {
     id: slugify('Sala Zachod overview'),
     tagLabel: 'Zachód słońca',
-    tagTone: 'orange',
+    tagColor: '#FE5900',
     eyebrow: 'Do 24 osób',
     title: 'Sala Zachód',
     description:

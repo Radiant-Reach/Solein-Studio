@@ -1,5 +1,6 @@
+import { graphql, useStaticQuery } from 'gatsby'
 import { useAtom } from 'jotai'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mobileMenuOpenAtom, scrollLockAtom } from 'store'
 
 import { Button } from 'components/atoms/Button'
@@ -13,18 +14,23 @@ import { useOutsideClick } from 'hooks/useOutsideClick'
 import { useScrollPosition } from 'hooks/useScroll'
 import { useScrollLock } from 'hooks/useScrollLock'
 
-import { NavDropdownItem, NavEntry } from 'types/domain'
+import slugify from 'utils/slugify'
+
+import { NavDropdownItem, NavEntry, NavLinkItem } from 'types/domain'
 
 import { ReactComponent as ChevronDown } from 'assets/icons/arrows/chevron-down.svg'
 import { ReactComponent as CloseIcon } from 'assets/icons/close.svg'
 import { ReactComponent as MenuIcon } from 'assets/icons/menu.svg'
 
 import {
-  LEFT_LINKS,
+  CENNIK_LINK,
+  GALERIA_LINK,
   LOGO_MARK_SRC,
-  MOBILE_LINKS,
   RESERVATION_LINK,
   RIGHT_LINKS,
+  ROOMS_DROPDOWN_ID,
+  ROOMS_DROPDOWN_NAME,
+  ROOMS_DROPDOWN_PATH,
 } from './Navigation.constants'
 import {
   DesktopLinks,
@@ -139,6 +145,52 @@ export const Navigation: React.FC = () => {
 
   const closeMobileMenu = () => setMobileMenuOpen(false)
 
+  const cmsData = useStaticQuery<Queries.NavigationRoomsQuery>(graphql`
+    query NavigationRooms {
+      rooms: allWpSala(sort: { title: ASC }) {
+        nodes {
+          slug
+          title
+        }
+      }
+    }
+  `)
+
+  const roomLinks: NavLinkItem[] = useMemo(
+    () =>
+      cmsData.rooms?.nodes?.map((room) => ({
+        id: room.slug!,
+        name: room.title!,
+        path: `/nasze-sale/${room.slug}`,
+      }))! || [],
+    [cmsData]
+  )
+
+  const roomsDropdown: NavDropdownItem = useMemo(
+    () => ({
+      id: ROOMS_DROPDOWN_ID,
+      name: ROOMS_DROPDOWN_NAME,
+      path: ROOMS_DROPDOWN_PATH,
+      children: roomLinks,
+    }),
+    [roomLinks]
+  )
+
+  const leftLinks: NavEntry[] = [roomsDropdown, CENNIK_LINK, GALERIA_LINK]
+
+  const mobileLinks: NavLinkItem[] = [
+    { id: slugify('Home'), name: 'Home', path: '/' },
+    {
+      id: slugify('Nasze sale mobile'),
+      name: 'Nasze sale',
+      path: ROOMS_DROPDOWN_PATH,
+    },
+    ...roomLinks,
+    CENNIK_LINK,
+    GALERIA_LINK,
+    ...RIGHT_LINKS,
+  ]
+
   return (
     <>
       <Wrapper $scrolled={isScrolled}>
@@ -159,7 +211,7 @@ export const Navigation: React.FC = () => {
             </Hidden>
 
             <Hidden $base="hidden" $md="visible">
-              <DesktopLinkList links={LEFT_LINKS} />
+              <DesktopLinkList links={leftLinks} />
             </Hidden>
           </Side>
 
@@ -191,7 +243,7 @@ export const Navigation: React.FC = () => {
       </Wrapper>
 
       <MobileMenu $open={mobileMenuOpen}>
-        {MOBILE_LINKS.map((link) => (
+        {mobileLinks.map((link) => (
           <MobileNavLink
             key={link.id}
             to={link.path}

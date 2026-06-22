@@ -2,15 +2,22 @@ import { useMemo } from 'react'
 
 import { BookingProps } from 'components/organisms/Booking'
 
-export const useFormatQueryData = () => {
+// The GHL booking iframe URL has no ACF field (removed deliberately — it's
+// an integration detail, not editorial content) and stays hardcoded here.
+const BOOKING_SRC =
+  'https://links.radiantreach.agency/booking/soleil-studio-x6mjd2dx7so?heightMode=full&showHeader=false'
+
+export const useFormatQueryData = (cmsData: Queries.RezerwacjaQuery) => {
   return useMemo(() => {
+    const FIELDS = cmsData.page?.rezerwacjaFields!
+
     const BOOKING_DATA = {
-      eyebrow: 'Rezerwacja',
-      heading: 'Zarezerwuj swój dzień w <span class="styled">słońcu</span>',
-      lead: 'Wybierz termin i salę — potwierdzimy dostępność i odezwiemy się z dalszymi szczegółami.',
-      src: 'https://links.radiantreach.agency/booking/soleil-studio-x6mjd2dx7so?heightMode=full&showHeader=false',
+      eyebrow: FIELDS.eyebrow!,
+      heading: FIELDS.heading!,
+      lead: FIELDS.lead!,
+      src: BOOKING_SRC,
     } satisfies BookingProps
 
     return { BOOKING_DATA }
-  }, [])
+  }, [JSON.stringify(cmsData)])
 }

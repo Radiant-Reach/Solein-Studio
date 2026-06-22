@@ -2,35 +2,46 @@ import { useMemo } from 'react'
 
 import { PHOTO_FRAME_TONES } from 'components/atoms/PhotoFrame'
 
-import { EventsBoardProps } from 'components/organisms/EventsBoard'
+import {
+  EventCategory,
+  EventsBoardProps,
+} from 'components/organisms/EventsBoard'
 
-import { EVENTS } from 'constants/events'
-
+import { toImage } from 'utils/format/toImage'
 import { pickFromSeed } from 'utils/pickFromSeed'
 
-export const useFormatQueryData = () => {
+export const useFormatQueryData = (cmsData: Queries.WydarzeniaQuery) => {
   return useMemo(() => {
+    const FIELDS = cmsData.page?.wydarzeniaFields!
+
     const EVENTS_BOARD_DATA = {
-      eyebrow: 'Kalendarz wydarzeń',
-      heading: 'Wydarzenia u <span class="styled">nas</span>',
-      lead: 'Przegląd wydarzeń odbywających się w Soleil Studio — naszych własnych i organizowanych przez gości studia.',
-      categories: [
-        { id: 'zewnetrzne', label: 'Zewnętrzne' },
-        { id: 'solein', label: 'Solein' },
-      ],
-      events: EVENTS.map((event) => ({
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        type: event.type,
-        tone: pickFromSeed(event.id, PHOTO_FRAME_TONES),
-        description: event.description,
-      })),
+      eyebrow: FIELDS.eyebrow!,
+      heading: FIELDS.heading!,
+      lead: FIELDS.lead!,
+      categories:
+        cmsData.types?.nodes?.map((term) => ({
+          id: term.slug as EventCategory,
+          label: term.name!,
+        }))! || [],
+      events:
+        cmsData.events?.nodes?.map((event) => ({
+          id: event.slug!,
+          title: event.title!,
+          date: event.wydarzenieFields?.date!,
+          // Only "Zewnętrzne"/"Solein" exist as taxonomy terms today —
+          // if a third type is ever added, EventsBoard's tag styling
+          // (TypeTag/UpcomingDot) needs a real color per term, not just
+          // this cast.
+          type: event.wydarzenieTypy?.nodes?.[0]?.slug as EventCategory,
+          tone: pickFromSeed(event.slug!, PHOTO_FRAME_TONES),
+          image: toImage(event.wydarzenieFields?.photo, event.title!),
+          description: event.wydarzenieFields?.description!,
+        }))! || [],
       upcomingHeading: 'Nadchodzące wydarzenia',
       emptyLabel: 'Brak wydarzeń w tym miesiącu.',
       upcomingEmptyLabel: 'Brak zaplanowanych nadchodzących wydarzeń.',
     } satisfies EventsBoardProps
 
     return { EVENTS_BOARD_DATA }
-  }, [])
+  }, [JSON.stringify(cmsData)])
 }

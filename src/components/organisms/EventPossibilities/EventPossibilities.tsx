@@ -7,6 +7,8 @@ import { BodyBig, BodySmall, Text } from 'components/atoms/Typography'
 import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
+import { ImageType } from 'types/page'
+
 import {
   HeadingWrapper,
   LightboxPhoto,
@@ -27,6 +29,7 @@ export type EventPossibility = {
 export type EventPhoto = {
   id: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export type EventPossibilitiesProps = {
@@ -64,7 +67,7 @@ export const EventPossibilities: React.FC<EventPossibilitiesProps> = ({
                 aria-label="Powiększ zdjęcie"
                 onClick={() => setActiveIndex(index)}
               >
-                <PhotoFrame tone={photo.tone} />
+                <PhotoFrame tone={photo.tone} image={photo.image} />
               </PhotoTileButton>
             </PhotoTile>
           ))}
@@ -112,7 +115,7 @@ export const EventPossibilities: React.FC<EventPossibilitiesProps> = ({
       >
         {activePhoto && (
           <LightboxPhoto>
-            <PhotoFrame tone={activePhoto.tone} />
+            <PhotoFrame tone={activePhoto.tone} image={activePhoto.image} />
           </LightboxPhoto>
         )}
       </Lightbox>

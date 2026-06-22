@@ -2,22 +2,23 @@ import { useMemo } from 'react'
 
 import { ContactProps } from 'components/organisms/Contact'
 
-import { CONTACT } from 'constants/brand'
-
-export const useFormatQueryData = () => {
+export const useFormatQueryData = (cmsData: Queries.KontaktQuery) => {
   return useMemo(() => {
+    const FIELDS = cmsData.page?.kontaktFields!
+    const KONTAKT = cmsData.wp?.ustawieniaGlobalne?.kontakt!
+
     const CONTACT_DATA = {
-      eyebrow: 'Kontakt',
-      heading: 'Zarezerwuj swój <span class="styled">dzień</span>',
-      lead: 'Opowiedz nam o swoim wydarzeniu — odpowiemy w ciągu 24 godzin.',
-      photoLabel: CONTACT.addressLines.join(' · '),
-      address: CONTACT.addressLines.join(', '),
-      hours: 'Pon–Sob, 8:00 – 22:00',
-      parking: 'Bezpłatny parking przy budynku',
-      email: CONTACT.email,
-      phone: CONTACT.phone,
+      eyebrow: FIELDS.eyebrow!,
+      heading: FIELDS.heading!,
+      lead: FIELDS.lead!,
+      photoLabel: `${KONTAKT.addressLine1} · ${KONTAKT.addressLine2}`,
+      address: `${KONTAKT.addressLine1}, ${KONTAKT.addressLine2}`,
+      hours: KONTAKT.hours!,
+      parking: KONTAKT.parkingNote!,
+      email: KONTAKT.email!,
+      phone: KONTAKT.phone!,
     } satisfies ContactProps
 
     return { CONTACT_DATA }
-  }, [])
+  }, [JSON.stringify(cmsData)])
 }

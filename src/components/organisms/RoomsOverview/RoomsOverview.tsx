@@ -7,6 +7,8 @@ import { BodyMedium, BodySmall, H400, Text } from 'components/atoms/Typography'
 
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
+import { ImageType } from 'types/page'
+
 import {
   HeaderRow,
   RoomCard,
@@ -23,8 +25,9 @@ import {
 export type RoomOverviewCard = {
   id: string
   tone: PhotoFrameTone
+  image?: ImageType
   tagLabel: string
-  tagTone: 'cream' | 'orange'
+  tagColor: string
   eyebrow: string
   title: string
   description: string
@@ -53,9 +56,9 @@ export const RoomsOverview: React.FC<RoomsOverviewProps> = ({
         {rooms.map((room) => (
           <RoomCard key={room.id} to={room.ctaTo}>
             <RoomCardPhoto>
-              <PhotoFrame tone={room.tone} />
+              <PhotoFrame tone={room.tone} image={room.image} />
 
-              <RoomTag $tone={room.tagTone}>
+              <RoomTag $color={room.tagColor}>
                 <Text
                   as="span"
                   $base={BodySmall}

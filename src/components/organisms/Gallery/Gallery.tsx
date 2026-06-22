@@ -7,6 +7,8 @@ import { BodySmall, Text } from 'components/atoms/Typography'
 import { Lightbox } from 'components/molecules/Lightbox'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
+import { ImageType } from 'types/page'
+
 import {
   FilterChip,
   FilterRow,
@@ -27,6 +29,7 @@ export type GalleryShot = {
   id: string
   category: string
   tone: PhotoFrameTone
+  image?: ImageType
   colSpan?: 2
   rowSpan?: 2
 }
@@ -100,7 +103,7 @@ export const Gallery: React.FC<GalleryProps> = ({
                 aria-label="Powiększ zdjęcie"
                 onClick={() => setActiveIndex(index)}
               >
-                <PhotoFrame tone={shot.tone} />
+                <PhotoFrame tone={shot.tone} image={shot.image} />
               </Tile>
             </GridItem>
           ))}
@@ -131,7 +134,7 @@ export const Gallery: React.FC<GalleryProps> = ({
       >
         {activeShot && (
           <LightboxPhoto>
-            <PhotoFrame tone={activeShot.tone} />
+            <PhotoFrame tone={activeShot.tone} image={activeShot.image} />
           </LightboxPhoto>
         )}
       </Lightbox>

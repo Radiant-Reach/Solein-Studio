@@ -1,4 +1,4 @@
-import { PageProps } from 'gatsby'
+import { PageProps, graphql } from 'gatsby'
 import React from 'react'
 
 import { Seo } from 'components/atoms/Seo'
@@ -9,8 +9,10 @@ import { Layout } from 'views/Layout'
 
 import { useFormatQueryData } from 'hooks/useFormatQueryData/rezerwacja'
 
-const RezerwacjaPage: React.FC<PageProps> = () => {
-  const { BOOKING_DATA } = useFormatQueryData()
+const RezerwacjaPage: React.FC<PageProps<Queries.RezerwacjaQuery>> = ({
+  data,
+}) => {
+  const { BOOKING_DATA } = useFormatQueryData(data)
 
   return (
     <Layout>
@@ -25,3 +27,15 @@ const RezerwacjaPage: React.FC<PageProps> = () => {
 }
 
 export default RezerwacjaPage
+
+export const query = graphql`
+  query Rezerwacja {
+    page: wpPage(slug: { eq: "rezerwacja" }) {
+      rezerwacjaFields {
+        eyebrow
+        heading
+        lead
+      }
+    }
+  }
+`

@@ -7,6 +7,8 @@ import { PhotoFrame, PhotoFrameTone } from 'components/atoms/PhotoFrame'
 
 import { LOGO_FULL_CREAM_SRC } from 'constants/brand'
 
+import { ImageType } from 'types/page'
+
 import {
   BrandPanel,
   Content,
@@ -18,20 +20,24 @@ import {
 
 export type HomeHeroProps = {
   leftTone: PhotoFrameTone
+  leftImage?: ImageType
   rightTone: PhotoFrameTone
+  rightImage?: ImageType
   ctaLabel: string
   ctaTo: string
 }
 
 export const HomeHero: React.FC<HomeHeroProps> = ({
   leftTone,
+  leftImage,
   rightTone,
+  rightImage,
   ctaLabel,
   ctaTo,
 }) => (
   <HeroWrapper>
     <PhotoPanel>
-      <PhotoFrame tone={leftTone} radius={0} />
+      <PhotoFrame tone={leftTone} image={leftImage} radius={0} />
     </PhotoPanel>
 
     <BrandPanel>
@@ -57,7 +63,7 @@ export const HomeHero: React.FC<HomeHeroProps> = ({
     </BrandPanel>
 
     <PhotoPanel>
-      <PhotoFrame tone={rightTone} radius={0} />
+      <PhotoFrame tone={rightTone} image={rightImage} radius={0} />
     </PhotoPanel>
   </HeroWrapper>
 )

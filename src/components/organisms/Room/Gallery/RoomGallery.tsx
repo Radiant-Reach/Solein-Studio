@@ -6,11 +6,14 @@ import { PhotoFrame, PhotoFrameTone } from 'components/atoms/PhotoFrame'
 import { Lightbox } from 'components/molecules/Lightbox'
 import { Swiper } from 'components/molecules/Swiper'
 
+import { ImageType } from 'types/page'
+
 import { GalleryTile, LightboxPhoto, Wrapper } from './RoomGallery.style'
 
 export type RoomGalleryPhoto = {
   id: string
   tone: PhotoFrameTone
+  image?: ImageType
 }
 
 export type RoomGalleryProps = {
@@ -34,7 +37,7 @@ export const RoomGallery: React.FC<RoomGalleryProps> = ({ photos }) => {
               aria-label="Powiększ zdjęcie"
               onClick={() => setActiveIndex(index)}
             >
-              <PhotoFrame tone={photo.tone} />
+              <PhotoFrame tone={photo.tone} image={photo.image} />
             </GalleryTile>
           )}
         />
@@ -64,7 +67,7 @@ export const RoomGallery: React.FC<RoomGalleryProps> = ({ photos }) => {
       >
         {activePhoto && (
           <LightboxPhoto>
-            <PhotoFrame tone={activePhoto.tone} />
+            <PhotoFrame tone={activePhoto.tone} image={activePhoto.image} />
           </LightboxPhoto>
         )}
       </Lightbox>
