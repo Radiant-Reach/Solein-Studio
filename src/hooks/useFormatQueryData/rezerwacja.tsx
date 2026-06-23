@@ -12,9 +12,9 @@ export const useFormatQueryData = (cmsData: Queries.RezerwacjaQuery) => {
     const FIELDS = cmsData.page?.rezerwacjaFields!
 
     const BOOKING_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      eyebrow: FIELDS.rezerwacjaEyebrow!,
+      heading: FIELDS.rezerwacjaHeading!,
+      lead: FIELDS.rezerwacjaLead!,
       src: BOOKING_SRC,
     } satisfies BookingProps
 

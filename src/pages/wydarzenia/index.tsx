@@ -32,9 +32,9 @@ export const query = graphql`
   query Wydarzenia {
     page: wpPage(slug: { eq: "wydarzenia" }) {
       wydarzeniaFields {
-        eyebrow
-        heading
-        lead
+        wydarzeniaEyebrow
+        wydarzeniaHeading
+        wydarzeniaLead
       }
     }
     events: allWpWydarzenie(sort: { wydarzenieFields: { date: ASC } }) {

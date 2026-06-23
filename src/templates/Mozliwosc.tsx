@@ -51,7 +51,7 @@ export const query = graphql`
           title
           description
         }
-        ctaBanner {
+        mozliwoscCtaBanner {
           heading
           text
           cta {

@@ -134,10 +134,10 @@ export const useFormatQueryData = (cmsData: Queries.HomeQuery) => {
     } satisfies GalleryTeaserProps
 
     const CTA_BANNER_DATA = {
-      heading: FIELDS.ctaBanner?.heading!,
-      text: FIELDS.ctaBanner?.text!,
-      ctaLabel: FIELDS.ctaBanner?.cta?.title!,
-      ctaTo: FIELDS.ctaBanner?.cta?.url!,
+      heading: FIELDS.homeCtaBanner?.heading!,
+      text: FIELDS.homeCtaBanner?.text!,
+      ctaLabel: FIELDS.homeCtaBanner?.cta?.title!,
+      ctaTo: FIELDS.homeCtaBanner?.cta?.url!,
     } satisfies CtaBannerProps
 
     return {

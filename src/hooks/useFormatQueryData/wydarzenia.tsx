@@ -15,9 +15,9 @@ export const useFormatQueryData = (cmsData: Queries.WydarzeniaQuery) => {
     const FIELDS = cmsData.page?.wydarzeniaFields!
 
     const EVENTS_BOARD_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      eyebrow: FIELDS.wydarzeniaEyebrow!,
+      heading: FIELDS.wydarzeniaHeading!,
+      lead: FIELDS.wydarzeniaLead!,
       categories:
         cmsData.types?.nodes?.map((term) => ({
           id: term.slug as EventCategory,

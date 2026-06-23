@@ -33,14 +33,14 @@ export const query = graphql`
   query Faq {
     page: wpPage(slug: { eq: "faq" }) {
       faqFields {
-        eyebrow
-        heading
-        lead
+        faqEyebrow
+        faqHeading
+        faqLead
         items {
           question
           answer
         }
-        ctaBanner {
+        faqCtaBanner {
           heading
           text
           cta {

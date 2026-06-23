@@ -32,8 +32,8 @@ export const query = graphql`
   query NaszeSale {
     page: wpPage(slug: { eq: "nasze-sale" }) {
       naszeSaleFields {
-        eyebrow
-        heading
+        naszeSaleEyebrow
+        naszeSaleHeading
       }
     }
     rooms: allWpSala(sort: { title: ASC }) {

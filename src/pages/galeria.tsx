@@ -30,9 +30,9 @@ export const query = graphql`
   query Galeria {
     page: wpPage(slug: { eq: "galeria" }) {
       galeriaFields {
-        eyebrow
-        heading
-        lead
+        galeriaEyebrow
+        galeriaHeading
+        galeriaLead
         filters {
           filterId
           label

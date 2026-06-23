@@ -30,9 +30,9 @@ export const query = graphql`
   query Kontakt {
     page: wpPage(slug: { eq: "kontakt" }) {
       kontaktFields {
-        eyebrow
-        heading
-        lead
+        kontaktEyebrow
+        kontaktHeading
+        kontaktLead
       }
     }
     wp {

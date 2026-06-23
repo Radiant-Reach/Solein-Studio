@@ -500,6 +500,69 @@ cleanly infer from (anything beyond a single `post_type`/CPT rule — a
 page template, a specific post, a taxonomy term, etc.), set `graphql_types`
 explicitly rather than simplifying the `location` rule to work around it.
 
+### Every ACF field `name` must be unique across all field groups sharing a parent type — no exceptions
+
+Multiple field groups attached to the same parent (the 8 page-level groups
+all on `Page` via `graphql_types`, or the 4 options-page groups all on
+`UstawieniaGlobalne`) **must never reuse a field `name`** between them, for
+two distinct reasons depending on the field type:
+
+**1. Top-level scalar/text/link fields — a real data-corruption bug, not just a GraphQL quirk.**
+ACF stores a *top-level* field's value as plain WordPress postmeta keyed
+by the field's bare `name`, with no namespacing by which field group
+declared it. `eyebrow`/`heading`/`lead` were originally declared bare on
+6–7 of the 8 page-level groups (Cennik, FAQ, Galeria, Kontakt, NaszeSale,
+Wydarzenia, Rezerwacja) — meaning, on any given Page post, ALL of those
+groups' same-named field read/write the *exact same* postmeta row.
+Confirmed live: the real "Kontakt" page's `kontaktFields.eyebrow`/
+`.heading` returned "Nasze sale" / "Dwa wnętrza, jedno słońce" — literally
+the Nasze Sale page's copy — straight from WPGraphQL with no Gatsby
+involved, because at some point a same-named field box for a different
+group was visible and saved on that same post (most likely while the
+admin-clutter state — see below — had every group's identically-named
+field visible on every page at once). **Fix: every formerly-bare field
+(`eyebrow`, `heading`, `lead`, etc.) on every page-level group is now
+prefixed per page** (`faq_eyebrow`, `kontakt_heading`, `cennik_lead`, ...),
+matching what Home and the original Cennik fields already did correctly
+(`rooms_eyebrow`, `addons_heading`, ...). Renaming changes the postmeta
+key, so already-filled-in content needs re-entering once a renamed field
+ships.
+
+**2. Nested `group`/`repeater` fields — a `gatsby-source-wordpress` sourcing bug.**
+`ssx_cta_banner_fields()` is shared by Home, FAQ and the `Mozliwosc` CPT's
+"CTA Banner" block, originally named `cta_banner` at all three call
+sites — Home's and FAQ's `ctaBanner.heading`/`.text`/`.cta` came back
+`null` through **Gatsby** (while `fieldGroupName` on the same object
+resolved fine, and WPGraphQL itself returned the real saved values when
+queried directly) because `gatsby-source-wordpress` gets confused
+resolving values for two same-named, same-shaped nested groups that are
+siblings on one parent type — even though their GraphQL type names were
+already distinct (`WpPage_Homefields_CtaBanner` vs
+`WpPage_Faqfields_CtaBanner`). `Mozliwosc`'s identical block sourced fine
+the whole time, since `Mozliwosc` doesn't share a parent type with
+anything. Fixed the same way: `home_cta_banner` / `faq_cta_banner` /
+`mozliwosc_cta_banner` (the third wasn't actively broken, renamed anyway
+since it's free insurance).
+
+**Rule going forward, for every field — scalar or grouped:** give every
+field's own `name` a call-site-specific prefix the moment it's declared on
+a field group that shares (or could ever share) a parent type with
+another group — never the bare name a shared helper's docblock suggests,
+and never "no collision today so it's fine." Two groups only need to be
+**registered** with the same `graphql_types`/parent type for the
+top-level-field bug to bite; nothing about their `location` rules needs
+to overlap, and nothing needs to be queried together in the same request.
+Before adding any new field or shared-helper call site, check: does any
+other field group already attached to this same parent type use this
+exact `name`? If yes, or it's ambiguous, name it uniquely. This applies
+equally to the **options page** group (`group_ssx_options_kontakt`,
+`group_ssx_options_social`, `group_ssx_options_cennik`,
+`group_ssx_options_equipment` — four groups sharing one parent type,
+`UstawieniaGlobalne`) — audited as of this writing with no collisions
+(`links`, `categories`, `pojedyncza_sala`, `cale_studio`, ... are all
+unique across the four) — and to any future CPT/options group that ends
+up sharing a parent type with another.
+
 ### Keep structural copy out of ACF
 
 Only fields whose value genuinely differs per page/post belong in ACF —

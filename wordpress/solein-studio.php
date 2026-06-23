@@ -716,10 +716,17 @@ add_action('acf/init', function () use ($cpt_mozliwosc) {
                     array('key' => 'field_ssx_mozliwosc_items_description', 'label' => 'Opis', 'name' => 'description', 'type' => 'textarea', 'rows' => 2),
                 ),
             ),
+            // Named "mozliwosc_cta_banner", not bare "cta_banner" — Mozliwosc
+            // isn't sharing a GraphQL parent type with Home/FAQ today so this
+            // isn't actively broken, but it's the exact same reused-helper
+            // shape that broke for them (see the comment on Home's
+            // cta_banner field). Renamed for consistency so nobody has to
+            // rediscover the bug if Mozliwosc ever ends up sharing a parent
+            // type with another group in the future.
             array(
                 'key'        => 'field_ssx_mozliwosc_cta_banner',
                 'label'      => 'CTA Banner',
-                'name'       => 'cta_banner',
+                'name'       => 'mozliwosc_cta_banner',
                 'type'       => 'group',
                 'sub_fields' => ssx_cta_banner_fields('field_ssx_mozliwosc_cta_banner'),
             ),
@@ -765,6 +772,21 @@ add_action('acf/init', function () use ($cpt_lokalizacja) {
 add_action('acf/init', function () use ($client_key) {
     if (!function_exists('acf_add_local_field_group')) return;
 
+    // CRITICAL: every top-level (non-grouped) field's `name` below must be
+    // unique across ALL 8 of these page-level field groups — never reuse a
+    // bare name like 'eyebrow'/'heading'/'lead'. ACF stores a top-level
+    // field's value as plain postmeta keyed by the field's bare `name`,
+    // with NO namespacing by which field group it's declared on. Since all
+    // 8 groups can be the one matching a given Page post, two groups using
+    // the same bare name read/write the exact same postmeta row on that
+    // post. Confirmed live: the real "Kontakt" page's `kontaktFields.eyebrow`/
+    // `.heading` returned "Nasze sale" / "Dwa wnętrza, jedno słońce" —
+    // literally the Nasze Sale page's copy — straight from WPGraphQL, no
+    // Gatsby involved. Every field below is now prefixed per page
+    // (`faq_eyebrow`, `kontakt_heading`, ...) for exactly this reason —
+    // do not revert a name to the bare form even if "no other group uses
+    // it right now"; that's exactly the state that broke before.
+    //
     // WPGraphQL for ACF infers a field group's GraphQL type from its
     // `location` rules, but only handles a *plain* `post_type` rule —
     // adding `page_template` alongside it (even as an AND condition) made
@@ -833,10 +855,27 @@ add_action('acf/init', function () use ($client_key) {
             array('key' => 'field_ssx_home_gallery_cta', 'label' => 'Przycisk CTA', 'name' => 'gallery_cta', 'type' => 'link'),
 
             array('key' => 'field_ssx_home_tab_cta_banner', 'label' => 'CTA Banner', 'type' => 'tab'),
+            // Named "home_cta_banner", not the generic "cta_banner" the
+            // ssx_cta_banner_fields() helper name suggests — homeFields and
+            // faqFields both attach to the same GraphQL parent type (Page,
+            // via $page_graphql_types) and confirmed live that two sibling
+            // field groups on one parent type with an identically named +
+            // shaped nested group ("cta_banner" with heading/text/cta on
+            // both) makes gatsby-source-wordpress resolve one of them to
+            // null (heading/text/cta all null) despite WPGraphQL itself
+            // returning real values — the GraphQL type names are already
+            // distinct (WpPage_Homefields_CtaBanner vs
+            // WpPage_Faqfields_CtaBanner) so this isn't a schema-level
+            // collision, but a gatsby-source-wordpress sourcing bug keyed
+            // on the shared name+shape. Mozliwosc's identical cta_banner
+            // group sources fine because Mozliwosc isn't sharing a parent
+            // type with anything else. Give any future reused nested group
+            // a unique name the moment its parent groups end up sharing a
+            // GraphQL type.
             array(
                 'key'        => 'field_ssx_home_cta_banner',
                 'label'      => 'CTA Banner',
-                'name'       => 'cta_banner',
+                'name'       => 'home_cta_banner',
                 'type'       => 'group',
                 'sub_fields' => ssx_cta_banner_fields('field_ssx_home_cta_banner'),
             ),
@@ -856,8 +895,8 @@ add_action('acf/init', function () use ($client_key) {
         'fields' => array(
             array('key' => 'field_ssx_cennik_tab_hero', 'label' => 'Hero', 'type' => 'tab'),
             array('key' => 'field_ssx_cennik_script_label', 'label' => 'Etykieta script', 'name' => 'script_label', 'type' => 'text'),
-            array('key' => 'field_ssx_cennik_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_cennik_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_cennik_heading', 'label' => 'Nagłówek', 'name' => 'cennik_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_cennik_lead', 'label' => 'Lead', 'name' => 'cennik_lead', 'type' => 'textarea', 'rows' => 2),
 
             array('key' => 'field_ssx_cennik_tab_addons', 'label' => 'Usługi dodatkowe', 'type' => 'tab'),
             array('key' => 'field_ssx_cennik_addons_heading', 'label' => 'Nagłówek', 'name' => 'addons_heading', 'type' => 'text'),
@@ -916,9 +955,9 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-faq.php"),
         'fields' => array(
-            array('key' => 'field_ssx_faq_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_faq_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_faq_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_faq_eyebrow', 'label' => 'Eyebrow', 'name' => 'faq_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_faq_heading', 'label' => 'Nagłówek', 'name' => 'faq_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_faq_lead', 'label' => 'Lead', 'name' => 'faq_lead', 'type' => 'textarea', 'rows' => 2),
             array(
                 'key'          => 'field_ssx_faq_items',
                 'label'        => 'Pytania',
@@ -931,10 +970,14 @@ add_action('acf/init', function () use ($client_key) {
                     array('key' => 'field_ssx_faq_items_answer', 'label' => 'Odpowiedź', 'name' => 'answer', 'type' => 'textarea', 'rows' => 3),
                 ),
             ),
+            // Named "faq_cta_banner", not "cta_banner" — see the comment on
+            // Home's cta_banner field above for why (shared "Page" GraphQL
+            // type + identically named/shaped nested group breaks
+            // gatsby-source-wordpress's sourcing for one of the two).
             array(
                 'key'        => 'field_ssx_faq_cta_banner',
                 'label'      => 'CTA Banner',
-                'name'       => 'cta_banner',
+                'name'       => 'faq_cta_banner',
                 'type'       => 'group',
                 'sub_fields' => ssx_cta_banner_fields('field_ssx_faq_cta_banner'),
             ),
@@ -950,9 +993,9 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-galeria.php"),
         'fields' => array(
-            array('key' => 'field_ssx_galeria_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_galeria_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_galeria_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_galeria_eyebrow', 'label' => 'Eyebrow', 'name' => 'galeria_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_galeria_heading', 'label' => 'Nagłówek', 'name' => 'galeria_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_galeria_lead', 'label' => 'Lead', 'name' => 'galeria_lead', 'type' => 'textarea', 'rows' => 2),
             array(
                 'key'          => 'field_ssx_galeria_filters',
                 'label'        => 'Filtry',
@@ -993,9 +1036,9 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-kontakt.php"),
         'fields' => array(
-            array('key' => 'field_ssx_kontakt_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_kontakt_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_kontakt_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_kontakt_eyebrow', 'label' => 'Eyebrow', 'name' => 'kontakt_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_kontakt_heading', 'label' => 'Nagłówek', 'name' => 'kontakt_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_kontakt_lead', 'label' => 'Lead', 'name' => 'kontakt_lead', 'type' => 'textarea', 'rows' => 2),
         ),
     ));
 
@@ -1009,8 +1052,8 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-nasze-sale.php"),
         'fields' => array(
-            array('key' => 'field_ssx_nasze_sale_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_nasze_sale_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
+            array('key' => 'field_ssx_nasze_sale_eyebrow', 'label' => 'Eyebrow', 'name' => 'nasze_sale_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_nasze_sale_heading', 'label' => 'Nagłówek', 'name' => 'nasze_sale_heading', 'type' => 'text'),
         ),
     ));
 
@@ -1025,9 +1068,9 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-wydarzenia.php"),
         'fields' => array(
-            array('key' => 'field_ssx_wydarzenia_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_wydarzenia_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_wydarzenia_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_wydarzenia_eyebrow', 'label' => 'Eyebrow', 'name' => 'wydarzenia_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_wydarzenia_heading', 'label' => 'Nagłówek', 'name' => 'wydarzenia_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_wydarzenia_lead', 'label' => 'Lead', 'name' => 'wydarzenia_lead', 'type' => 'textarea', 'rows' => 2),
         ),
     ));
 
@@ -1040,9 +1083,9 @@ add_action('acf/init', function () use ($client_key) {
         'graphql_types'      => $page_graphql_types,
         'location'           => $page_location("{$client_key}-rezerwacja.php"),
         'fields' => array(
-            array('key' => 'field_ssx_rezerwacja_eyebrow', 'label' => 'Eyebrow', 'name' => 'eyebrow', 'type' => 'text'),
-            array('key' => 'field_ssx_rezerwacja_heading', 'label' => 'Nagłówek', 'name' => 'heading', 'type' => 'text'),
-            array('key' => 'field_ssx_rezerwacja_lead', 'label' => 'Lead', 'name' => 'lead', 'type' => 'textarea', 'rows' => 2),
+            array('key' => 'field_ssx_rezerwacja_eyebrow', 'label' => 'Eyebrow', 'name' => 'rezerwacja_eyebrow', 'type' => 'text'),
+            array('key' => 'field_ssx_rezerwacja_heading', 'label' => 'Nagłówek', 'name' => 'rezerwacja_heading', 'type' => 'text'),
+            array('key' => 'field_ssx_rezerwacja_lead', 'label' => 'Lead', 'name' => 'rezerwacja_lead', 'type' => 'textarea', 'rows' => 2),
         ),
     ));
 });

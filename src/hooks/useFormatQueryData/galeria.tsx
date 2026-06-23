@@ -13,9 +13,9 @@ export const useFormatQueryData = (cmsData: Queries.GaleriaQuery) => {
     const FIELDS = cmsData.page?.galeriaFields!
 
     const GALLERY_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      eyebrow: FIELDS.galeriaEyebrow!,
+      heading: FIELDS.galeriaHeading!,
+      lead: FIELDS.galeriaLead!,
       filters:
         FIELDS.filters?.map((filter) => ({
           id: filter?.filterId!,
@@ -29,7 +29,7 @@ export const useFormatQueryData = (cmsData: Queries.GaleriaQuery) => {
             id,
             category: shot?.category!,
             tone: pickFromSeed(id, PHOTO_FRAME_TONES),
-            image: toImage(shot?.photo, FIELDS.heading!),
+            image: toImage(shot?.photo, FIELDS.galeriaHeading!),
             colSpan: shot?.spanWide ? 2 : undefined,
             rowSpan: shot?.spanTall ? 2 : undefined,
           }

@@ -126,7 +126,7 @@ export const query = graphql`
           title
           url
         }
-        ctaBanner {
+        homeCtaBanner {
           heading
           text
           cta {

@@ -8,9 +8,9 @@ export const useFormatQueryData = (cmsData: Queries.KontaktQuery) => {
     const KONTAKT = cmsData.wp?.ustawieniaGlobalne?.kontakt!
 
     const CONTACT_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      eyebrow: FIELDS.kontaktEyebrow!,
+      heading: FIELDS.kontaktHeading!,
+      lead: FIELDS.kontaktLead!,
       photoLabel: `${KONTAKT.addressLine1} · ${KONTAKT.addressLine2}`,
       address: `${KONTAKT.addressLine1}, ${KONTAKT.addressLine2}`,
       hours: KONTAKT.hours!,

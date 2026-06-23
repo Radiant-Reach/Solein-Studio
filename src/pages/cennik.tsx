@@ -45,8 +45,8 @@ export const query = graphql`
     page: wpPage(slug: { eq: "cennik" }) {
       cennikFields {
         scriptLabel
-        heading
-        lead
+        cennikHeading
+        cennikLead
         addonsHeading
         makeupTitle
         makeupPrice

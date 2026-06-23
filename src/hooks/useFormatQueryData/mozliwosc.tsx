@@ -51,10 +51,10 @@ export const useFormatQueryData = (cmsData: Queries.MozliwoscQuery) => {
     } satisfies EventPossibilitiesProps
 
     const CTA_BANNER_DATA = {
-      heading: FIELDS.ctaBanner?.heading!,
-      text: FIELDS.ctaBanner?.text!,
-      ctaLabel: FIELDS.ctaBanner?.cta?.title!,
-      ctaTo: FIELDS.ctaBanner?.cta?.url!,
+      heading: FIELDS.mozliwoscCtaBanner?.heading!,
+      text: FIELDS.mozliwoscCtaBanner?.text!,
+      ctaLabel: FIELDS.mozliwoscCtaBanner?.cta?.title!,
+      ctaTo: FIELDS.mozliwoscCtaBanner?.cta?.url!,
     } satisfies CtaBannerProps
 
     return { EVENT_POSSIBILITIES_DATA, CTA_BANNER_DATA }

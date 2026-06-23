@@ -11,9 +11,9 @@ export const useFormatQueryData = (cmsData: Queries.FaqQuery) => {
     const FIELDS = cmsData.page?.faqFields!
 
     const FAQ_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      eyebrow: FIELDS.faqEyebrow!,
+      heading: FIELDS.faqHeading!,
+      lead: FIELDS.faqLead!,
       items:
         FIELDS.items?.map((item) => ({
           id: slugify(item?.question!),
@@ -23,10 +23,10 @@ export const useFormatQueryData = (cmsData: Queries.FaqQuery) => {
     } satisfies FAQProps
 
     const CTA_BANNER_DATA = {
-      heading: FIELDS.ctaBanner?.heading!,
-      text: FIELDS.ctaBanner?.text!,
-      ctaLabel: FIELDS.ctaBanner?.cta?.title!,
-      ctaTo: FIELDS.ctaBanner?.cta?.url!,
+      heading: FIELDS.faqCtaBanner?.heading!,
+      text: FIELDS.faqCtaBanner?.text!,
+      ctaLabel: FIELDS.faqCtaBanner?.cta?.title!,
+      ctaTo: FIELDS.faqCtaBanner?.cta?.url!,
     } satisfies CtaBannerProps
 
     return { FAQ_DATA, CTA_BANNER_DATA }

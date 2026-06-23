@@ -15,8 +15,8 @@ export const useFormatQueryData = (cmsData: Queries.CennikQuery) => {
 
     const PRICING_HERO_DATA = {
       scriptLabel: FIELDS.scriptLabel!,
-      heading: FIELDS.heading!,
-      lead: FIELDS.lead!,
+      heading: FIELDS.cennikHeading!,
+      lead: FIELDS.cennikLead!,
     } satisfies PricingHeroProps
 
     // The two plans' own labels/CTAs are fixed UI structure (there are

@@ -32,9 +32,9 @@ export const query = graphql`
   query Rezerwacja {
     page: wpPage(slug: { eq: "rezerwacja" }) {
       rezerwacjaFields {
-        eyebrow
-        heading
-        lead
+        rezerwacjaEyebrow
+        rezerwacjaHeading
+        rezerwacjaLead
       }
     }
   }

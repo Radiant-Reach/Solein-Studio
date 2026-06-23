@@ -13,8 +13,8 @@ export const useFormatQueryData = (cmsData: Queries.NaszeSaleQuery) => {
     const FIELDS = cmsData.page?.naszeSaleFields!
 
     const ROOMS_OVERVIEW_DATA = {
-      eyebrow: FIELDS.eyebrow!,
-      heading: FIELDS.heading!,
+      eyebrow: FIELDS.naszeSaleEyebrow!,
+      heading: FIELDS.naszeSaleHeading!,
       rooms:
         cmsData.rooms?.nodes?.map((sala) => ({
           id: sala.slug!,
