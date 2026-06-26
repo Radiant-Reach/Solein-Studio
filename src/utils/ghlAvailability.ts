@@ -8,6 +8,7 @@ import {
 } from 'utils/ghl'
 
 type BusyRange = { start: number; end: number; resourceIds: string[] }
+type MinuteInterval = { from: number; to: number }
 
 const SERVICE_ID_TO_RESOURCES: Record<string, string[]> = Object.fromEntries(
   Object.values(GHL_SERVICES).map((service) => [
@@ -63,13 +64,10 @@ const minutesSinceMidnight = (time: string) => {
   return hours * 60 + minutes
 }
 
-// Each room is assigned to a different GHL team member, and each one has
-// their own real working-hours schedule configured in GHL (confirmed
-// live: the two individual rooms' staff work 08:00–21:00, "Całe Studio"'s
-// staff only 08:00–17:00, none work weekends) — there's no single
-// business-hours constant that holds across all three, so the actual
-// schedule has to be fetched and used instead of guessed.
-const getWorkingIntervals = async (staffId: string, day: Date) => {
+const getStaffIntervals = async (
+  staffId: string,
+  day: Date
+): Promise<MinuteInterval[]> => {
   const schedules = await getSchedules()
   const schedule = schedules.find((item) => item.userId === staffId)
   if (!schedule) return []
@@ -77,7 +75,49 @@ const getWorkingIntervals = async (staffId: string, day: Date) => {
   const dayName = WEEKDAY_NAMES[day.getDay()]
   const rule = schedule.rules.find((item) => item.day === dayName)
 
-  return rule?.intervals ?? []
+  return (rule?.intervals ?? []).map(({ from, to }) => ({
+    from: minutesSinceMidnight(from),
+    to: minutesSinceMidnight(to),
+  }))
+}
+
+const intersectIntervals = (
+  a: MinuteInterval[],
+  b: MinuteInterval[]
+): MinuteInterval[] => {
+  const result: MinuteInterval[] = []
+
+  a.forEach((intervalA) => {
+    b.forEach((intervalB) => {
+      const from = Math.max(intervalA.from, intervalB.from)
+      const to = Math.min(intervalA.to, intervalB.to)
+      if (from < to) result.push({ from, to })
+    })
+  })
+
+  return result
+}
+
+// "Całe Studio" has its own GHL staff member/schedule (currently
+// 08:00–17:00), but that's a disconnected default, not the real
+// constraint — renting the whole studio just means both rooms have to be
+// free, so its real available hours are the *intersection* of the two
+// individual rooms' own schedules (08:00–21:00 each), not its own staff's
+// schedule. Confirmed against the room schedules directly rather than
+// trusting the Studio staff entry.
+const getWorkingIntervals = async (
+  room: GhlRoomId,
+  day: Date
+): Promise<MinuteInterval[]> => {
+  if (room === 'studio') {
+    const [zachodIntervals, wschodIntervals] = await Promise.all([
+      getStaffIntervals(GHL_SERVICES.zachod.staffId, day),
+      getStaffIntervals(GHL_SERVICES.wschod.staffId, day),
+    ])
+    return intersectIntervals(zachodIntervals, wschodIntervals)
+  }
+
+  return getStaffIntervals(GHL_SERVICES[room].staffId, day)
 }
 
 // `durationMinutes` should already include any "Dodatkowe godziny
@@ -89,9 +129,9 @@ export const getAvailableSlots = async (
   day: Date,
   durationMinutes: number = SLOT_DURATION_MINUTES
 ): Promise<Date[]> => {
-  const { resourceIds, staffId } = GHL_SERVICES[room]
+  const { resourceIds } = GHL_SERVICES[room]
 
-  const intervals = await getWorkingIntervals(staffId, day)
+  const intervals = await getWorkingIntervals(room, day)
   if (intervals.length === 0) return []
 
   const rangeStart = new Date(day)
@@ -108,10 +148,7 @@ export const getAvailableSlots = async (
   const slots: Date[] = []
   const now = Date.now()
 
-  intervals.forEach(({ from, to }) => {
-    const openMinute = minutesSinceMidnight(from)
-    const closeMinute = minutesSinceMidnight(to)
-
+  intervals.forEach(({ from: openMinute, to: closeMinute }) => {
     for (
       let startMinute = openMinute;
       startMinute + durationMinutes <= closeMinute;
