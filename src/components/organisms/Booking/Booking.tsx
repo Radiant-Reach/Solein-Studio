@@ -215,6 +215,34 @@ export const Booking: React.FC<BookingProps> = ({
 
       setSubmitError(null)
 
+      // GHL's own server-side availability check can't be trusted here
+      // (see ghl.ts — `overrideAvailability` is set because the staff
+      // schedules aren't linked to anything GHL's check can use), so
+      // we're the only thing standing between two visitors double
+      // booking the same room/slot. Re-verify right before submitting —
+      // anything could have been booked since the slot was first fetched
+      // (a few minutes on the contact step, another visitor, ...) —
+      // instead of trusting the possibly-stale list from the datetime
+      // step. This sits outside the try/catch below so its specific
+      // message doesn't get overwritten by the generic failure one.
+      const freshSlots = await getAvailableSlots(
+        roomId,
+        selectedSlot,
+        totalDurationMinutes
+      )
+      const isStillAvailable = freshSlots.some(
+        (slot) => slot.getTime() === selectedSlot.getTime()
+      )
+
+      if (!isStillAvailable) {
+        setSubmitError(
+          'Ten termin został właśnie zarezerwowany. Wróć i wybierz inny.'
+        )
+        setSelectedSlot(null)
+        setStep('datetime')
+        throw new Error('slot-no-longer-available')
+      }
+
       try {
         const contact = await upsertContact({
           firstName: data.firstName,
