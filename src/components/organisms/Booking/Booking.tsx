@@ -225,10 +225,15 @@ export const Booking: React.FC<BookingProps> = ({
       999
     )
 
-    getDaysWithAvailability(roomId, visibleMonth, monthEnd)
+    getDaysWithAvailability(
+      roomId,
+      visibleMonth,
+      monthEnd,
+      totalDurationMinutes
+    )
       .then(setAvailableDays)
       .catch(() => setAvailableDays(new Set()))
-  }, [step, roomId, visibleMonth])
+  }, [step, roomId, visibleMonth, totalDurationMinutes])
 
   const { control, errors, onSubmit, isSubmitting, isSuccess } = useForm({
     schema: BOOKING_FORM_SCHEMA,
