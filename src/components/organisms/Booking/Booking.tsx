@@ -13,7 +13,7 @@ import { SectionHeading } from 'components/molecules/SectionHeading'
 import { BOOKING_FORM_INIT_VALUES, BOOKING_FORM_SCHEMA } from 'constants/form'
 import {
   GHL_ADD_ONS,
-  GHL_SERVICES,
+  GHL_CALENDARS,
   GhlAddOnId,
   GhlRoomId,
   SLOT_DURATION_MINUTES,
@@ -21,8 +21,12 @@ import {
 
 import { useForm } from 'hooks/useForm'
 
-import { createServiceBooking, upsertContact } from 'utils/ghl'
-import { getAvailableSlots } from 'utils/ghlAvailability'
+import { createAppointment, upsertContact } from 'utils/ghl'
+import {
+  getAvailableSlots,
+  getDaysWithAvailability,
+  toDateKey,
+} from 'utils/ghlAvailability'
 import { pickFromSeed } from 'utils/pickFromSeed'
 
 import { ImageType } from 'types/page'
@@ -82,7 +86,6 @@ export type BookingProps = {
 
 type Step = 'service' | 'addons' | 'datetime' | 'contact'
 
-const TIMEZONE = 'Europe/Warsaw'
 const WEEKDAY_LABELS = ['Nd', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
 
 const startOfMonth = (date: Date) =>
@@ -153,12 +156,13 @@ export const Booking: React.FC<BookingProps> = ({
     startOfMonth(new Date())
   )
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+  const [availableDays, setAvailableDays] = useState<Set<string> | null>(null)
   const [slots, setSlots] = useState<Date[]>([])
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const selectedService = roomId ? GHL_SERVICES[roomId] : null
+  const selectedService = roomId ? GHL_CALENDARS[roomId] : null
   const extraHours = addOnQuantities['extra-hours'] ?? 0
   const totalDurationMinutes =
     SLOT_DURATION_MINUTES +
@@ -206,6 +210,26 @@ export const Booking: React.FC<BookingProps> = ({
       .finally(() => setIsLoadingSlots(false))
   }, [step, roomId, selectedDay, totalDurationMinutes])
 
+  useEffect(() => {
+    if (step !== 'datetime' || !roomId) return
+
+    setAvailableDays(null)
+
+    const monthEnd = new Date(
+      visibleMonth.getFullYear(),
+      visibleMonth.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    )
+
+    getDaysWithAvailability(roomId, visibleMonth, monthEnd)
+      .then(setAvailableDays)
+      .catch(() => setAvailableDays(new Set()))
+  }, [step, roomId, visibleMonth])
+
   const { control, errors, onSubmit, isSubmitting, isSuccess } = useForm({
     schema: BOOKING_FORM_SCHEMA,
     options: { defaultValues: BOOKING_FORM_INIT_VALUES },
@@ -215,15 +239,15 @@ export const Booking: React.FC<BookingProps> = ({
 
       setSubmitError(null)
 
-      // GHL's own server-side availability check can't be trusted here
-      // (see ghl.ts — `overrideAvailability` is set because the staff
-      // schedules aren't linked to anything GHL's check can use), so
-      // we're the only thing standing between two visitors double
-      // booking the same room/slot. Re-verify right before submitting —
-      // anything could have been booked since the slot was first fetched
-      // (a few minutes on the contact step, another visitor, ...) —
-      // instead of trusting the possibly-stale list from the datetime
-      // step. This sits outside the try/catch below so its specific
+      // GHL validates same-calendar conflicts on its own when the
+      // appointment is created, but it has no idea "Całe Studio" and the
+      // two individual rooms are meant to be mutually exclusive — that
+      // cross-calendar rule only exists in our own getAvailableSlots.
+      // Re-verify right before submitting, since anything could have
+      // been booked since the slot was first fetched (a few minutes on
+      // the contact step, another visitor, ...) and we'd rather catch a
+      // stale Całe Studio/room conflict here than rely on GHL to reject
+      // it. This sits outside the try/catch below so its specific
       // message doesn't get overwritten by the generic failure one.
       const freshSlots = await getAvailableSlots(
         roomId,
@@ -255,30 +279,28 @@ export const Booking: React.FC<BookingProps> = ({
           selectedSlot.getTime() + totalDurationMinutes * 60000
         )
 
-        const addOns = (
-          Object.entries(addOnQuantities) as [GhlAddOnId, number | undefined][]
-        )
-          .filter(([, qty]) => (qty ?? 0) > 0)
-          .map(([id, qty]) => {
-            const addOn = GHL_ADD_ONS[id]
-            return {
-              id: addOn.id,
-              quantity: qty,
-              duration: addOn.unitDurationMinutes
-                ? addOn.unitDurationMinutes * (qty ?? 0)
-                : undefined,
-            }
-          })
+        // Classic Calendar Appointments have no native add-ons concept
+        // (that was Service Menu-specific) — fold the selection into the
+        // description as plain text so staff still see it in GHL, even
+        // though it isn't itemized/billed there.
+        const addOnsSummary = selectedAddOns
+          .map((addOn) =>
+            addOn.quantity > 1
+              ? `${addOn.label} ×${addOn.quantity}`
+              : addOn.label
+          )
+          .join(', ')
 
-        await createServiceBooking({
+        await createAppointment({
+          calendarId: selectedService.calendarId,
           contactId: contact.id,
           startTime: selectedSlot.toISOString(),
           endTime: endTime.toISOString(),
-          timezone: TIMEZONE,
-          serviceId: selectedService.serviceId,
-          addOns,
           title:
             `${selectedService.label} — ${data.firstName} ${data.lastName ?? ''}`.trim(),
+          description: addOnsSummary
+            ? `Dodatki: ${addOnsSummary}. Łączna kwota: ${totalPrice} zł.`
+            : `Łączna kwota: ${totalPrice} zł.`,
         })
       } catch {
         setSubmitError(
@@ -359,8 +381,8 @@ export const Booking: React.FC<BookingProps> = ({
                   </StepHeading>
 
                   <ServicesGrid>
-                    {(Object.keys(GHL_SERVICES) as GhlRoomId[]).map((id) => {
-                      const service = GHL_SERVICES[id]
+                    {(Object.keys(GHL_CALENDARS) as GhlRoomId[]).map((id) => {
+                      const service = GHL_CALENDARS[id]
                       return (
                         <ServiceCard key={id}>
                           <ServicePhoto>
@@ -577,27 +599,38 @@ export const Booking: React.FC<BookingProps> = ({
                             }
 
                             const isPast = isPastDay(date)
-                            const isSunday = date.getDay() === 0
                             const isActive =
                               selectedDay !== null &&
                               isSameDay(date, selectedDay)
+                            // While the month's availability is still
+                            // loading (null), don't gray anything out yet
+                            // beyond past days — avoids briefly flashing
+                            // every day as unavailable.
+                            const hasAvailability =
+                              availableDays === null ||
+                              availableDays.has(toDateKey(date))
+                            const dayColor = isActive
+                              ? 'cream'
+                              : isPast || !hasAvailability
+                                ? 'ink500'
+                                : 'ink800'
 
                             return (
                               <DayCell
                                 key={date.toISOString()}
                                 type="button"
                                 $active={isActive}
-                                disabled={isPast || isSunday}
+                                disabled={isPast || !hasAvailability}
                                 onClick={() => selectDay(date)}
                               >
                                 <Text
                                   as="span"
                                   $base={BodySmall}
-                                  $color={isActive ? 'cream' : 'ink800'}
+                                  $color={dayColor}
                                 >
                                   {date.getDate()}
                                 </Text>
-                                {!isPast && !isSunday && !isActive && (
+                                {!isPast && hasAvailability && !isActive && (
                                   <DayAvailabilityDot />
                                 )}
                               </DayCell>

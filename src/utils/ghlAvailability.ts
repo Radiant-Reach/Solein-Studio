@@ -1,30 +1,12 @@
-import { GHL_SERVICES, GhlRoomId, SLOT_DURATION_MINUTES } from 'constants/ghl'
+import { GHL_CALENDARS, GhlRoomId, SLOT_DURATION_MINUTES } from 'constants/ghl'
 
-import {
-  GhlScheduleRule,
-  GhlServiceBooking,
-  getSchedules,
-  getServiceBookings,
-} from 'utils/ghl'
+import { getCalendarEvents, getFreeSlots } from 'utils/ghl'
 
-type BusyRange = { start: number; end: number; resourceIds: string[] }
-type MinuteInterval = { from: number; to: number }
+const TIMEZONE = 'Europe/Warsaw'
+const STEP_MS = 30 * 60000
 
-const SERVICE_ID_TO_RESOURCES: Record<string, string[]> = Object.fromEntries(
-  Object.values(GHL_SERVICES).map((service) => [
-    service.serviceId,
-    service.resourceIds,
-  ])
-)
-
-const toBusyRanges = (bookings: GhlServiceBooking[]): BusyRange[] =>
-  bookings.map((booking) => ({
-    start: new Date(booking.startTime).getTime(),
-    end: new Date(booking.endTime).getTime(),
-    resourceIds: booking.services.flatMap(
-      (service) => SERVICE_ID_TO_RESOURCES[service.id] ?? []
-    ),
-  }))
+const toTimestampSet = (slots: Date[]) =>
+  new Set(slots.map((slot) => slot.getTime()))
 
 const rangesOverlap = (
   aStart: number,
@@ -33,91 +15,35 @@ const rangesOverlap = (
   bEnd: number
 ) => aStart < bEnd && bStart < aEnd
 
-// A slot is free for `resourceIds` only if no busy range sharing any of
-// those resources overlaps it — this is what makes booking "Całe Studio"
-// (both room resources) block both individual rooms, and booking either
-// room block "Całe Studio", without either room blocking the other.
-const isResourceFree = (
-  busyRanges: BusyRange[],
-  resourceIds: string[],
-  slotStart: number,
-  slotEnd: number
+const getOwnFreeSlots = (
+  room: 'zachod' | 'wschod',
+  rangeStart: number,
+  rangeEnd: number
 ) =>
-  !busyRanges.some(
-    (busy) =>
-      rangesOverlap(slotStart, slotEnd, busy.start, busy.end) &&
-      busy.resourceIds.some((id) => resourceIds.includes(id))
-  )
+  getFreeSlots(GHL_CALENDARS[room].calendarId, rangeStart, rangeEnd, TIMEZONE)
 
-const WEEKDAY_NAMES: GhlScheduleRule['day'][] = [
-  'sunday',
-  'monday',
-  'tuesday',
-  'wednesday',
-  'thursday',
-  'friday',
-  'saturday',
-]
-
-const minutesSinceMidnight = (time: string) => {
-  const [hours, minutes] = time.split(':').map(Number)
-  return hours * 60 + minutes
-}
-
-const getStaffIntervals = async (
-  staffId: string,
-  day: Date
-): Promise<MinuteInterval[]> => {
-  const schedules = await getSchedules()
-  const schedule = schedules.find((item) => item.userId === staffId)
-  if (!schedule) return []
-
-  const dayName = WEEKDAY_NAMES[day.getDay()]
-  const rule = schedule.rules.find((item) => item.day === dayName)
-
-  return (rule?.intervals ?? []).map(({ from, to }) => ({
-    from: minutesSinceMidnight(from),
-    to: minutesSinceMidnight(to),
-  }))
-}
-
-const intersectIntervals = (
-  a: MinuteInterval[],
-  b: MinuteInterval[]
-): MinuteInterval[] => {
-  const result: MinuteInterval[] = []
-
-  a.forEach((intervalA) => {
-    b.forEach((intervalB) => {
-      const from = Math.max(intervalA.from, intervalB.from)
-      const to = Math.min(intervalA.to, intervalB.to)
-      if (from < to) result.push({ from, to })
-    })
-  })
-
-  return result
-}
-
-// "Całe Studio" has its own GHL staff member/schedule (currently
-// 08:00–17:00), but that's a disconnected default, not the real
-// constraint — renting the whole studio just means both rooms have to be
-// free, so its real available hours are the *intersection* of the two
-// individual rooms' own schedules (08:00–21:00 each), not its own staff's
-// schedule. Confirmed against the room schedules directly rather than
-// trusting the Studio staff entry.
-const getWorkingIntervals = async (
+// "Całe Studio" has its own GHL calendar, but its assigned team member's
+// working-hours schedule is a disconnected, narrower default
+// (08:00–17:00) — confirmed live it doesn't reflect the real bookable
+// window, which is whenever *both* rooms are free. So Studio's candidate
+// slots come from intersecting the two rooms' own (correct) free-slots,
+// not from Studio's own free-slots/hours.
+const getCandidateSlots = async (
   room: GhlRoomId,
-  day: Date
-): Promise<MinuteInterval[]> => {
-  if (room === 'studio') {
-    const [zachodIntervals, wschodIntervals] = await Promise.all([
-      getStaffIntervals(GHL_SERVICES.zachod.staffId, day),
-      getStaffIntervals(GHL_SERVICES.wschod.staffId, day),
-    ])
-    return intersectIntervals(zachodIntervals, wschodIntervals)
+  rangeStart: number,
+  rangeEnd: number
+): Promise<Date[]> => {
+  if (room !== 'studio') {
+    return getOwnFreeSlots(room, rangeStart, rangeEnd)
   }
 
-  return getStaffIntervals(GHL_SERVICES[room].staffId, day)
+  const [zachodSlots, wschodSlots] = await Promise.all([
+    getOwnFreeSlots('zachod', rangeStart, rangeEnd),
+    getOwnFreeSlots('wschod', rangeStart, rangeEnd),
+  ])
+  const wschodSet = toTimestampSet(wschodSlots)
+
+  return zachodSlots.filter((slot) => wschodSet.has(slot.getTime()))
 }
 
 // `durationMinutes` should already include any "Dodatkowe godziny
@@ -129,50 +55,94 @@ export const getAvailableSlots = async (
   day: Date,
   durationMinutes: number = SLOT_DURATION_MINUTES
 ): Promise<Date[]> => {
-  const { resourceIds } = GHL_SERVICES[room]
-
-  const intervals = await getWorkingIntervals(room, day)
-  if (intervals.length === 0) return []
-
   const rangeStart = new Date(day)
   rangeStart.setHours(0, 0, 0, 0)
   const rangeEnd = new Date(day)
   rangeEnd.setHours(23, 59, 59, 999)
 
-  const bookings = await getServiceBookings(
-    rangeStart.getTime(),
-    rangeEnd.getTime()
-  )
-  const busyRanges = toBusyRanges(bookings)
+  const [candidateSlots, studioEvents] = await Promise.all([
+    getCandidateSlots(room, rangeStart.getTime(), rangeEnd.getTime()),
+    // Whichever room this is for, an existing "Całe Studio" booking
+    // blocks it (and blocks itself, preventing double-booking the whole
+    // studio) — Studio's calendar is the only one a room booking never
+    // shows up on by itself, so this is the one cross-check every room
+    // needs regardless of which one we're computing slots for.
+    getCalendarEvents(
+      GHL_CALENDARS.studio.calendarId,
+      rangeStart.getTime(),
+      rangeEnd.getTime()
+    ),
+  ])
 
-  const slots: Date[] = []
+  const candidateSet = toTimestampSet(candidateSlots)
+  const busyRanges = studioEvents.map((event) => ({
+    start: new Date(event.startTime).getTime(),
+    end: new Date(event.endTime).getTime(),
+  }))
+
+  const durationMs = durationMinutes * 60000
+
+  // GHL's free-slots are 30-minute increments at the calendar's default
+  // duration — a candidate start is only really bookable for our
+  // (possibly longer, via the extra-hours add-on) duration if every
+  // 30-minute increment across the whole span is itself a candidate
+  // slot, not just the start.
+  const isFullySpanned = (start: number) => {
+    for (let offset = 0; offset < durationMs; offset += STEP_MS) {
+      if (!candidateSet.has(start + offset)) return false
+    }
+    return true
+  }
+
+  const hasNoStudioConflict = (start: number, end: number) =>
+    !busyRanges.some((busy) => rangesOverlap(start, end, busy.start, busy.end))
+
   const now = Date.now()
 
-  intervals.forEach(({ from: openMinute, to: closeMinute }) => {
-    for (
-      let startMinute = openMinute;
-      startMinute + durationMinutes <= closeMinute;
-      startMinute += 60
-    ) {
-      const slotStart = new Date(day)
-      slotStart.setHours(0, startMinute, 0, 0)
-      const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000)
+  return candidateSlots.filter((slot) => {
+    const start = slot.getTime()
+    if (start < now) return false
+    if (!isFullySpanned(start)) return false
+    return hasNoStudioConflict(start, start + durationMs)
+  })
+}
 
-      const isPast = slotStart.getTime() < now
-      const isFree =
-        !isPast &&
-        isResourceFree(
-          busyRanges,
-          resourceIds,
-          slotStart.getTime(),
-          slotEnd.getTime()
-        )
+export const toDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
-      if (isFree) {
-        slots.push(slotStart)
-      }
-    }
+// Coarser than getAvailableSlots — used to gray out whole days in the
+// calendar grid, so it checks "is there any open slot at all" rather
+// than a specific duration. One pair of API calls covers the whole
+// visible month (GHL caps a free-slots range at 31 days) instead of one
+// call per day.
+export const getDaysWithAvailability = async (
+  room: GhlRoomId,
+  monthStart: Date,
+  monthEnd: Date
+): Promise<Set<string>> => {
+  const [candidateSlots, studioEvents] = await Promise.all([
+    getCandidateSlots(room, monthStart.getTime(), monthEnd.getTime()),
+    getCalendarEvents(
+      GHL_CALENDARS.studio.calendarId,
+      monthStart.getTime(),
+      monthEnd.getTime()
+    ),
+  ])
+
+  const busyRanges = studioEvents.map((event) => ({
+    start: new Date(event.startTime).getTime(),
+    end: new Date(event.endTime).getTime(),
+  }))
+
+  const now = Date.now()
+  const days = new Set<string>()
+
+  candidateSlots.forEach((slot) => {
+    const time = slot.getTime()
+    if (time < now) return
+    if (busyRanges.some((busy) => time >= busy.start && time < busy.end)) return
+    days.add(toDateKey(slot))
   })
 
-  return slots
+  return days
 }

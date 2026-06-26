@@ -154,6 +154,7 @@ export const StepActions = styled.div`
 /* Step 3 — date & slot picker */
 export const CalendarLayout = styled.div`
   display: flex;
+  align-items: stretch;
   flex-wrap: wrap;
   gap: ${rem(32)};
 `
@@ -241,9 +242,14 @@ export const DayAvailabilityDot = styled.span`
 export const SlotsColumn = styled.div`
   flex: 1;
   min-width: ${rem(180)};
+  max-height: ${rem(360)};
+
   display: flex;
   flex-direction: column;
   gap: ${rem(10)};
+
+  overflow-y: auto;
+  padding-right: ${rem(4)};
 `
 
 export const SlotRow = styled.div`
