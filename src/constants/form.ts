@@ -92,6 +92,25 @@ export const CONTACT_FORM_INIT_VALUES = {
   message: undefined,
 } satisfies ContactFormSchema
 
+// Booking (GHL service booking) form schema
+export const BOOKING_FORM_SCHEMA = z.object({
+  firstName: name,
+  lastName: z.string().optional(),
+  phone,
+  email,
+  message: optionalMessage,
+})
+
+export type BookingFormSchema = z.infer<typeof BOOKING_FORM_SCHEMA>
+
+export const BOOKING_FORM_INIT_VALUES = {
+  firstName: '',
+  lastName: '',
+  phone: '',
+  email: '',
+  message: undefined,
+} satisfies BookingFormSchema
+
 // Job form schema
 export const JOB_FORM_SCHEMA = z.object({
   name,

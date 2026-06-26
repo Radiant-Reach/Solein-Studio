@@ -6,6 +6,7 @@ const client = {
   GATSBY_ROBOTS: process.env.GATSBY_ROBOTS!,
   GATSBY_DEBUG_MODE: process.env.GATSBY_DEBUG_MODE === 'true',
   GATSBY_MAILER_URL: process.env.GATSBY_MAILER_URL!,
+  GATSBY_GHL_API_KEY: process.env.GATSBY_GHL_API_KEY!,
 }
 
 const server = {

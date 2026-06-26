@@ -37,5 +37,21 @@ export const query = graphql`
         rezerwacjaLead
       }
     }
+    rooms: allWpSala {
+      nodes {
+        slug
+        title
+        salaFields {
+          heroPhoto {
+            altText
+            localFile {
+              childImageSharp {
+                gatsbyImageData
+              }
+            }
+          }
+        }
+      }
+    }
   }
 `
