@@ -30,6 +30,7 @@
  *   Nasze sale                | nasze-sale   | Nasze sale (lista)        | /nasze-sale
  *   Wydarzenia                | wydarzenia   | Wydarzenia (kalendarz)    | /wydarzenia
  *   Rezerwacja                | rezerwacja   | Rezerwacja                | /rezerwacja
+ *   Soleil Collective         | soleil-collective | Soleil Collective    | /wydarzenia/soleil-collective
  *
  * Plus content entries (not Pages — these use their own post types/options):
  *   - Ustawienia Globalne → fill in directly, no page needed (top-level
@@ -428,6 +429,7 @@ add_filter('theme_page_templates', function ($templates) use ($client_key) {
         "{$client_key}-nasze-sale.php" => 'Nasze sale (lista)',
         "{$client_key}-wydarzenia.php" => 'Wydarzenia (kalendarz)',
         "{$client_key}-rezerwacja.php" => 'Rezerwacja',
+        "{$client_key}-soleil-collective.php" => 'Soleil Collective',
     );
 });
 
@@ -1086,6 +1088,38 @@ add_action('acf/init', function () use ($client_key) {
             array('key' => 'field_ssx_rezerwacja_eyebrow', 'label' => 'Eyebrow', 'name' => 'rezerwacja_eyebrow', 'type' => 'text'),
             array('key' => 'field_ssx_rezerwacja_heading', 'label' => 'Nagłówek', 'name' => 'rezerwacja_heading', 'type' => 'text'),
             array('key' => 'field_ssx_rezerwacja_lead', 'label' => 'Lead', 'name' => 'rezerwacja_lead', 'type' => 'textarea', 'rows' => 2),
+        ),
+    ));
+
+    /* --- Soleil Collective ---------------------------------------------------
+     * For events at the studio not created by Soleil itself — description,
+     * vision/mission/"for whom" blocks and photos, reusing the exact same
+     * content shape as <StudioIntro> (see ssx_studio_intro_fields() above).
+     * The group's "cta" link field doubles as the Instagram link the brief
+     * asked for, exactly like every other CTA in this project.
+     *
+     * Named "collective_intro", not "studio_intro" — this group attaches to
+     * the same `Page` GraphQL type as Home's studio_intro (via
+     * $page_graphql_types), and a same-name + same-shape nested group on
+     * sibling field groups sharing a parent type is the exact pattern that
+     * broke gatsby-source-wordpress for Home/FAQ's cta_banner (see the
+     * comment above Home's cta_banner field) — give it a unique name up
+     * front instead of waiting to hit that bug again. */
+    acf_add_local_field_group(array(
+        'key'                => 'group_ssx_page_soleil_collective',
+        'title'              => 'Soleil Collective',
+        'graphql_field_name' => 'soleilCollectiveFields',
+        'show_in_graphql'    => true,
+        'graphql_types'      => $page_graphql_types,
+        'location'           => $page_location("{$client_key}-soleil-collective.php"),
+        'fields' => array(
+            array(
+                'key'        => 'field_ssx_soleil_collective_intro',
+                'label'      => 'Treść',
+                'name'       => 'collective_intro',
+                'type'       => 'group',
+                'sub_fields' => ssx_studio_intro_fields('field_ssx_soleil_collective_intro'),
+            ),
         ),
     ));
 });

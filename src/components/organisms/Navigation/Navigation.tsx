@@ -1,7 +1,12 @@
 import { graphql, useStaticQuery } from 'gatsby'
-import { useAtom } from 'jotai'
+import { useAtom, useAtomValue } from 'jotai'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { mobileMenuOpenAtom, scrollLockAtom } from 'store'
+import {
+  NavTheme,
+  mobileMenuOpenAtom,
+  navThemeAtom,
+  scrollLockAtom,
+} from 'store'
 
 import { Button } from 'components/atoms/Button'
 import { Hidden } from 'components/atoms/Hidden'
@@ -24,6 +29,7 @@ import { ReactComponent as MenuIcon } from 'assets/icons/menu.svg'
 
 import {
   CENNIK_LINK,
+  EVENTS_DROPDOWN,
   GALERIA_LINK,
   LOGO_MARK_SRC,
   RESERVATION_LINK,
@@ -56,7 +62,10 @@ const SCROLL_THRESHOLD = 50
 const isDropdownEntry = (entry: NavEntry): entry is NavDropdownItem =>
   'children' in entry
 
-const NavDropdown: React.FC<{ entry: NavDropdownItem }> = ({ entry }) => {
+const NavDropdown: React.FC<{ entry: NavDropdownItem; navTheme: NavTheme }> = ({
+  entry,
+  navTheme,
+}) => {
   const ref = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
 
@@ -68,8 +77,8 @@ const NavDropdown: React.FC<{ entry: NavDropdownItem }> = ({ entry }) => {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <NavDropdownTriggerRow $open={open}>
-        <NavDropdownLabel to={entry.path}>
+      <NavDropdownTriggerRow $open={open} $navTheme={navTheme}>
+        <NavDropdownLabel to={entry.path} $navTheme={navTheme}>
           <Text
             as="span"
             $base={BodySmall}
@@ -83,6 +92,7 @@ const NavDropdown: React.FC<{ entry: NavDropdownItem }> = ({ entry }) => {
           type="button"
           aria-label={open ? 'Zwiń listę sal' : 'Rozwiń listę sal'}
           onClick={() => setOpen((prev) => !prev)}
+          $navTheme={navTheme}
         >
           <NavDropdownChevron $open={open}>
             <Icon src={ChevronDown} size={10} />
@@ -97,6 +107,7 @@ const NavDropdown: React.FC<{ entry: NavDropdownItem }> = ({ entry }) => {
             to={child.path}
             activeClassName="active"
             onClick={() => setOpen(false)}
+            $navTheme={navTheme}
           >
             <Text
               as="span"
@@ -111,13 +122,21 @@ const NavDropdown: React.FC<{ entry: NavDropdownItem }> = ({ entry }) => {
   )
 }
 
-const DesktopLinkList: React.FC<{ links: NavEntry[] }> = ({ links }) => (
+const DesktopLinkList: React.FC<{ links: NavEntry[]; navTheme: NavTheme }> = ({
+  links,
+  navTheme,
+}) => (
   <DesktopLinks>
     {links.map((entry) =>
       isDropdownEntry(entry) ? (
-        <NavDropdown key={entry.id} entry={entry} />
+        <NavDropdown key={entry.id} entry={entry} navTheme={navTheme} />
       ) : (
-        <NavLink key={entry.id} to={entry.path} activeClassName="active">
+        <NavLink
+          key={entry.id}
+          to={entry.path}
+          activeClassName="active"
+          $navTheme={navTheme}
+        >
           <Text
             as="span"
             $base={BodySmall}
@@ -134,6 +153,7 @@ const DesktopLinkList: React.FC<{ links: NavEntry[] }> = ({ links }) => (
 export const Navigation: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useAtom(mobileMenuOpenAtom)
   const [, setScrollLock] = useAtom(scrollLockAtom)
+  const navTheme = useAtomValue(navThemeAtom)
   const { y } = useScrollPosition(50)
   const isScrolled = y > SCROLL_THRESHOLD
 
@@ -177,6 +197,7 @@ export const Navigation: React.FC = () => {
   )
 
   const leftLinks: NavEntry[] = [roomsDropdown, CENNIK_LINK, GALERIA_LINK]
+  const rightLinks: NavEntry[] = [EVENTS_DROPDOWN, ...RIGHT_LINKS]
 
   const mobileLinks: NavLinkItem[] = [
     { id: slugify('Home'), name: 'Home', path: '/' },
@@ -188,12 +209,18 @@ export const Navigation: React.FC = () => {
     ...roomLinks,
     CENNIK_LINK,
     GALERIA_LINK,
+    {
+      id: slugify('Eventy mobile'),
+      name: EVENTS_DROPDOWN.name,
+      path: EVENTS_DROPDOWN.path!,
+    },
+    ...EVENTS_DROPDOWN.children,
     ...RIGHT_LINKS,
   ]
 
   return (
     <>
-      <Wrapper $scrolled={isScrolled}>
+      <Wrapper $scrolled={isScrolled} $navTheme={navTheme}>
         <InnerWrapper $variant="wide">
           <Side $align="left">
             <Hidden $base="visible" $md="hidden">
@@ -211,7 +238,7 @@ export const Navigation: React.FC = () => {
             </Hidden>
 
             <Hidden $base="hidden" $md="visible">
-              <DesktopLinkList links={leftLinks} />
+              <DesktopLinkList links={leftLinks} navTheme={navTheme} />
             </Hidden>
           </Side>
 
@@ -226,7 +253,7 @@ export const Navigation: React.FC = () => {
 
           <Side $align="right">
             <Hidden $base="hidden" $md="visible">
-              <DesktopLinkList links={RIGHT_LINKS} />
+              <DesktopLinkList links={rightLinks} navTheme={navTheme} />
             </Hidden>
 
             <Hidden $base="hidden" $md="visible">
@@ -242,13 +269,14 @@ export const Navigation: React.FC = () => {
         </InnerWrapper>
       </Wrapper>
 
-      <MobileMenu $open={mobileMenuOpen}>
+      <MobileMenu $open={mobileMenuOpen} $navTheme={navTheme}>
         {mobileLinks.map((link) => (
           <MobileNavLink
             key={link.id}
             to={link.path}
             activeClassName="active"
             onClick={closeMobileMenu}
+            $navTheme={navTheme}
           >
             <Text
               as="span"

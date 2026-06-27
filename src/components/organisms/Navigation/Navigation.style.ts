@@ -1,14 +1,25 @@
 import { rem, rgba } from 'polished'
+import { NavTheme } from 'store'
 import styled, { css } from 'styled-components'
 
 import { Container } from 'components/atoms/Container'
 import { Link } from 'components/atoms/Link'
 
 import media from 'styles/media'
+import { Theme } from 'styles/theme'
 
 export const HEADER_HEIGHT = 88
 
-export const Wrapper = styled.header<{ $scrolled: boolean }>`
+// Single source of truth for the nav's accent color — switches to the
+// Soleil Collective sub-brand's rose tone while that page is mounted
+// (see navThemeAtom), default everywhere else.
+export const getNavAccent = (theme: Theme, navTheme: NavTheme) =>
+  navTheme === 'collective' ? theme.colors.rose600 : theme.colors.primary100
+
+export const Wrapper = styled.header<{
+  $scrolled: boolean
+  $navTheme: NavTheme
+}>`
   position: fixed;
   top: 0;
   left: 0;
@@ -17,7 +28,8 @@ export const Wrapper = styled.header<{ $scrolled: boolean }>`
 
   padding: ${rem(16)} 0;
 
-  background-color: ${({ theme }) => theme.colors.sand};
+  background-color: ${({ theme, $navTheme }) =>
+    $navTheme === 'collective' ? theme.colors.rose050 : theme.colors.sand};
   border-bottom: 1px solid transparent;
   transition:
     background-color 0.3s ease,
@@ -84,19 +96,20 @@ export const DesktopLinks = styled.nav`
   gap: ${rem(32)};
 `
 
-export const NavLink = styled(Link)`
+export const NavLink = styled(Link)<{ $navTheme: NavTheme }>`
   text-decoration: none;
   letter-spacing: ${rem(1.5)};
   color: ${({ theme }) => theme.colors.black};
   transition: color 0.2s ease;
 
   &.active {
-    color: ${({ theme }) => theme.colors.primary100};
+    color: ${({ theme, $navTheme }) => getNavAccent(theme, $navTheme)};
   }
 
-  ${media.hoverMixin(css`
-    color: ${({ theme }) => theme.colors.primary100};
-  `)}
+  ${({ theme, $navTheme }) =>
+    media.hoverMixin(css`
+      color: ${getNavAccent(theme, $navTheme)};
+    `)}
 `
 
 export const NavDropdownWrapper = styled.div`
@@ -112,7 +125,10 @@ export const NavDropdownWrapper = styled.div`
   }
 `
 
-export const NavDropdownTriggerRow = styled.div<{ $open: boolean }>`
+export const NavDropdownTriggerRow = styled.div<{
+  $open: boolean
+  $navTheme: NavTheme
+}>`
   display: flex;
   align-items: center;
   gap: ${rem(4)};
@@ -120,26 +136,27 @@ export const NavDropdownTriggerRow = styled.div<{ $open: boolean }>`
   letter-spacing: ${rem(1.5)};
   color: ${({ theme }) => theme.colors.black};
 
-  ${({ $open, theme }) =>
+  ${({ $open, $navTheme, theme }) =>
     $open &&
     css`
-      color: ${theme.colors.primary100};
+      color: ${getNavAccent(theme, $navTheme)};
     `}
 `
 
-export const NavDropdownLabel = styled(Link)`
+export const NavDropdownLabel = styled(Link)<{ $navTheme: NavTheme }>`
   display: flex;
   align-items: center;
   text-decoration: none;
   color: inherit;
   transition: color 0.2s ease;
 
-  ${media.hoverMixin(css`
-    color: ${({ theme }) => theme.colors.primary100};
-  `)}
+  ${({ theme, $navTheme }) =>
+    media.hoverMixin(css`
+      color: ${getNavAccent(theme, $navTheme)};
+    `)}
 `
 
-export const NavDropdownToggle = styled.button`
+export const NavDropdownToggle = styled.button<{ $navTheme: NavTheme }>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -151,9 +168,10 @@ export const NavDropdownToggle = styled.button`
   color: inherit;
   transition: color 0.2s ease;
 
-  ${media.hoverMixin(css`
-    color: ${({ theme }) => theme.colors.primary100};
-  `)}
+  ${({ theme, $navTheme }) =>
+    media.hoverMixin(css`
+      color: ${getNavAccent(theme, $navTheme)};
+    `)}
 `
 
 export const NavDropdownChevron = styled.span<{ $open: boolean }>`
@@ -187,19 +205,20 @@ export const NavDropdownPanel = styled.div<{ $open: boolean }>`
     visibility 0.2s ease;
 `
 
-export const NavDropdownLink = styled(Link)`
+export const NavDropdownLink = styled(Link)<{ $navTheme: NavTheme }>`
   text-decoration: none;
   padding: ${rem(10)} ${rem(16)};
   color: ${({ theme }) => theme.colors.black};
 
   &.active {
-    color: ${({ theme }) => theme.colors.primary100};
+    color: ${({ theme, $navTheme }) => getNavAccent(theme, $navTheme)};
   }
 
-  ${media.hoverMixin(css`
-    color: ${({ theme }) => theme.colors.primary100};
-    background-color: ${({ theme }) => theme.colors.gray00};
-  `)}
+  ${({ theme, $navTheme }) =>
+    media.hoverMixin(css`
+      color: ${getNavAccent(theme, $navTheme)};
+      background-color: ${theme.colors.gray00};
+    `)}
 `
 
 export const ToggleButton = styled.button`
@@ -214,7 +233,7 @@ export const ToggleButton = styled.button`
   color: ${({ theme }) => theme.colors.black};
 `
 
-export const MobileMenu = styled.div<{ $open: boolean }>`
+export const MobileMenu = styled.div<{ $open: boolean; $navTheme: NavTheme }>`
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -224,7 +243,8 @@ export const MobileMenu = styled.div<{ $open: boolean }>`
   gap: ${rem(24)};
 
   padding: ${rem(HEADER_HEIGHT + 24)} ${rem(24)} ${rem(24)};
-  background-color: ${({ theme }) => theme.colors.sand};
+  background-color: ${({ theme, $navTheme }) =>
+    $navTheme === 'collective' ? theme.colors.rose050 : theme.colors.sand};
 
   opacity: ${({ $open }) => ($open ? 1 : 0)};
   visibility: ${({ $open }) => ($open ? 'visible' : 'hidden')};
@@ -235,11 +255,11 @@ export const MobileMenu = styled.div<{ $open: boolean }>`
     visibility 0.3s ease;
 `
 
-export const MobileNavLink = styled(Link)`
+export const MobileNavLink = styled(Link)<{ $navTheme: NavTheme }>`
   text-decoration: none;
   color: ${({ theme }) => theme.colors.black};
 
   &.active {
-    color: ${({ theme }) => theme.colors.primary100};
+    color: ${({ theme, $navTheme }) => getNavAccent(theme, $navTheme)};
   }
 `

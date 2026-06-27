@@ -54,6 +54,19 @@ export const colors = {
   terracotta100: '#F3DDD2',
   terracotta050: '#FAEEE7',
 
+  // Soleil Collective sub-brand accent — reddish/pink, distinct from the
+  // main terracotta palette, used only on the "Soleil Collective" subpage.
+  // Static for now; will move to the CMS options page later.
+  rose: '#A8385F',
+  rose700: '#6B1F3D',
+  rose600: '#85294D',
+  rose500: '#A8385F',
+  rose400: '#C15D7C',
+  rose300: '#D693A4',
+  rose200: '#E8BFCD',
+  rose100: '#F4DEE6',
+  rose050: '#FBEEF2',
+
   ink900: '#2A1614',
   ink800: '#361E1C',
   ink700: '#4D332F',

@@ -1,10 +1,18 @@
 import { rem } from 'polished'
-import styled from 'styled-components'
+import styled, { css } from 'styled-components'
 
 import media from 'styles/media'
 
-export const Wrapper = styled.section`
+export type StudioIntroVariant = 'studio' | 'collective'
+
+export const Wrapper = styled.section<{ $variant: StudioIntroVariant }>`
   padding: ${rem(96)} 0;
+
+  ${({ $variant, theme }) =>
+    $variant === 'collective' &&
+    css`
+      background-color: ${theme.colors.rose050};
+    `}
 `
 
 export const IntroWrapper = styled.div`
@@ -50,14 +58,18 @@ export const PhotoTileButton = styled.button`
   background: none;
 `
 
-export const FeatureRow = styled.div`
+export const FeatureRow = styled.div<{ $variant: StudioIntroVariant }>`
   display: grid;
   grid-template-columns: 1fr;
   gap: ${rem(40)};
   align-items: center;
 
   padding: ${rem(56)} 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.espresso1F};
+  border-top: 1px solid
+    ${({ theme, $variant }) =>
+      $variant === 'collective'
+        ? theme.colors.rose200
+        : theme.colors.espresso1F};
 
   ${media.lg.min} {
     grid-template-columns: 1fr 1fr;
