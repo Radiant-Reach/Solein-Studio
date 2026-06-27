@@ -2,28 +2,39 @@ export const GHL_LOCATION_ID = '7MfabSjyJOaPp1679hg2'
 
 export type GhlRoomId = 'zachod' | 'wschod' | 'studio'
 
-// Classic GHL Calendars (not the "Service Menu" feature) — each room is
-// its own calendar with its own assigned team member. Classic calendars'
-// `/free-slots` endpoint correctly computes real availability from that
-// team member's schedule, unlike Service Menu bookings (confirmed live:
-// that path's schedules had an empty `calendarIds` link, so GHL's own
-// availability check rejected every slot regardless of correctness).
+// Classic GHL Calendars, `calendarType: 'collective'` — each room's
+// calendar has a primary team member plus (potentially) other non-primary
+// members attached so they show up in every appointment's `users` array.
+//
+// Collective calendars compute `/free-slots` from the *joint* availability
+// of every attached member, not just the primary — confirmed live that
+// adding a second, more narrowly-scheduled member shrank a room's real
+// bookable hours (08:00–21:00 → 08:00–17:00) purely because of their
+// personal schedule, even though they're not the one being booked. So we
+// don't use `/free-slots` for hours at all here — `staffId` is the
+// *primary* member's id, used to read their own schedule directly via
+// `/calendars/schedules/search` and compute real hours ourselves,
+// ignoring whoever else is attached. Appointment creation always passes
+// `ignoreFreeSlotValidation` for the same reason (see ghl.ts).
 export const GHL_CALENDARS: Record<
   GhlRoomId,
-  { calendarId: string; label: string; price: number }
+  { calendarId: string; staffId: string; label: string; price: number }
 > = {
   zachod: {
-    calendarId: '2TPSootBZjyb1kZ86aLa',
+    calendarId: 'c5gtemCR6OHVNER1Kqfw',
+    staffId: 'YnFBbO48RfYZPEK51o84',
     label: 'Wynajem Sala Zachód',
     price: 140,
   },
   wschod: {
-    calendarId: 'Uq30Zy5hNFsuwVwrBnyd',
+    calendarId: 'J0mQVSdtEWNyxWYbPsMn',
+    staffId: 'n7ckKpyhTN09pvXaufYm',
     label: 'Wynajem Sala Wschód',
     price: 140,
   },
   studio: {
-    calendarId: 'roWuwGwZhJdhFrJ542Yn',
+    calendarId: 'r326KX87VRc9xKNGo0GI',
+    staffId: '0eK0YqEl7PVC16RV2fzS',
     label: 'Wynajem Całe Studio',
     price: 240,
   },

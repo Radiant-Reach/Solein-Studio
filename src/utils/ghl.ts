@@ -32,27 +32,39 @@ export const upsertContact = async (contact: UpsertContactInput) => {
   return data.contact
 }
 
-// Response is keyed by date string (e.g. "2026-06-29"), each holding the
-// real bookable start times for that calendar's own assigned team
-// member — this is what's missing for Service Menu bookings (their
-// schedules aren't linked to anything), but works correctly here.
-export const getFreeSlots = async (
-  calendarId: string,
-  startDate: number,
-  endDate: number,
-  timezone: string
-): Promise<Date[]> => {
-  const { data } = await ghlClient.get<Record<string, { slots?: string[] }>>(
-    `/calendars/${calendarId}/free-slots`,
+export type GhlScheduleInterval = { from: string; to: string }
+export type GhlScheduleRule = {
+  day:
+    | 'monday'
+    | 'tuesday'
+    | 'wednesday'
+    | 'thursday'
+    | 'friday'
+    | 'saturday'
+    | 'sunday'
+  intervals?: GhlScheduleInterval[]
+}
+export type GhlSchedule = {
+  id: string
+  userId: string
+  rules: GhlScheduleRule[]
+}
+
+// We read a specific team member's own "Work Hours" schedule directly
+// rather than using a calendar's `/free-slots` — collective calendars
+// compute that from the *joint* availability of every attached member,
+// so a non-primary member with a narrower schedule would otherwise
+// silently shrink the room's real bookable hours (confirmed live).
+export const getSchedules = async () => {
+  const { data } = await ghlClient.get<{ schedules: GhlSchedule[] }>(
+    '/calendars/schedules/search',
     {
       headers: { Version: 'v3' },
-      params: { startDate, endDate, timezone },
+      params: { locationId: GHL_LOCATION_ID },
     }
   )
 
-  return Object.values(data)
-    .flatMap((day) => day.slots ?? [])
-    .map((slot) => new Date(slot))
+  return data.schedules
 }
 
 export type GhlCalendarEvent = { startTime: string; endTime: string }
@@ -85,7 +97,17 @@ export type CreateAppointmentInput = {
 export const createAppointment = async (input: CreateAppointmentInput) => {
   const { data } = await ghlClient.post(
     '/calendars/events/appointments',
-    { locationId: GHL_LOCATION_ID, ...input },
+    {
+      locationId: GHL_LOCATION_ID,
+      ...input,
+      // GHL would otherwise validate this against the calendar's *joint*
+      // free-slots (every attached team member, not just the primary —
+      // see constants/ghl.ts), which doesn't reflect the room's real
+      // hours. We already compute and show the visitor real availability
+      // ourselves, so this only skips GHL's redundant (and here,
+      // incorrect) re-check, not our own.
+      ignoreFreeSlotValidation: true,
+    },
     { headers: { Version: 'v3' } }
   )
 
