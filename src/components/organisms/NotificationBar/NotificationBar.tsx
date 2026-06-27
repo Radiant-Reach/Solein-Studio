@@ -4,10 +4,10 @@ import { BodySmall, Text } from 'components/atoms/Typography'
 
 import { useNotificationBar } from 'hooks/cms/useNotificationBar'
 
-import { NotificationLink, Wrapper } from './NotificationBar.style'
+import { Wrapper } from './NotificationBar.style'
 
 export const NotificationBar: React.FC = () => {
-  const { text, link } = useNotificationBar()
+  const { text } = useNotificationBar()
 
   if (!text) return null
 
@@ -19,13 +19,6 @@ export const NotificationBar: React.FC = () => {
         $color="white"
         dangerouslySetInnerHTML={{ __html: text }}
       />
-
-      {link?.url && (
-        <NotificationLink
-          to={link.url}
-          dangerouslySetInnerHTML={{ __html: link.title || link.url }}
-        />
-      )}
     </Wrapper>
   )
 }

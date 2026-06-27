@@ -11,22 +11,16 @@ export const useNotificationBar = () => {
         ustawieniaGlobalne {
           kontakt {
             notificationText
-            notificationLink {
-              title
-              url
-            }
           }
         }
       }
     }
   `)
 
-  const kontakt = cmsData.wp?.ustawieniaGlobalne?.kontakt
-  const text = kontakt?.notificationText
+  const text = cmsData.wp?.ustawieniaGlobalne?.kontakt?.notificationText
 
   return {
     text,
-    link: kontakt?.notificationLink,
     isVisible: !!text,
   }
 }
