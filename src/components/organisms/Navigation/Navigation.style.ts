@@ -5,6 +5,8 @@ import styled, { css } from 'styled-components'
 import { Container } from 'components/atoms/Container'
 import { Link } from 'components/atoms/Link'
 
+import { NOTIFICATION_BAR_HEIGHT } from 'components/organisms/NotificationBar/NotificationBar.style'
+
 import media from 'styles/media'
 import { Theme } from 'styles/theme'
 
@@ -19,9 +21,11 @@ export const getNavAccent = (theme: Theme, navTheme: NavTheme) =>
 export const Wrapper = styled.header<{
   $scrolled: boolean
   $navTheme: NavTheme
+  $notificationBarVisible: boolean
 }>`
   position: fixed;
-  top: 0;
+  top: ${({ $notificationBarVisible }) =>
+    rem($notificationBarVisible ? NOTIFICATION_BAR_HEIGHT : 0)};
   left: 0;
   right: 0;
   z-index: 50;
@@ -233,7 +237,11 @@ export const ToggleButton = styled.button`
   color: ${({ theme }) => theme.colors.black};
 `
 
-export const MobileMenu = styled.div<{ $open: boolean; $navTheme: NavTheme }>`
+export const MobileMenu = styled.div<{
+  $open: boolean
+  $navTheme: NavTheme
+  $notificationBarVisible: boolean
+}>`
   position: fixed;
   inset: 0;
   z-index: 40;
@@ -242,7 +250,13 @@ export const MobileMenu = styled.div<{ $open: boolean; $navTheme: NavTheme }>`
   flex-direction: column;
   gap: ${rem(24)};
 
-  padding: ${rem(HEADER_HEIGHT + 24)} ${rem(24)} ${rem(24)};
+  padding: ${({ $notificationBarVisible }) =>
+      rem(
+        HEADER_HEIGHT +
+          ($notificationBarVisible ? NOTIFICATION_BAR_HEIGHT : 0) +
+          24
+      )}
+    ${rem(24)} ${rem(24)};
   background-color: ${({ theme, $navTheme }) =>
     $navTheme === 'collective' ? theme.colors.rose050 : theme.colors.sand};
 

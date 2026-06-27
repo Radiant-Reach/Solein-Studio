@@ -15,6 +15,7 @@ import { Image } from 'components/atoms/Image'
 import { Link } from 'components/atoms/Link'
 import { BodySmall, H400, Text } from 'components/atoms/Typography'
 
+import { useNotificationBar } from 'hooks/cms/useNotificationBar'
 import { useOutsideClick } from 'hooks/useOutsideClick'
 import { useScrollPosition } from 'hooks/useScroll'
 import { useScrollLock } from 'hooks/useScrollLock'
@@ -154,6 +155,7 @@ export const Navigation: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useAtom(mobileMenuOpenAtom)
   const [, setScrollLock] = useAtom(scrollLockAtom)
   const navTheme = useAtomValue(navThemeAtom)
+  const { isVisible: notificationBarVisible } = useNotificationBar()
   const { y } = useScrollPosition(50)
   const isScrolled = y > SCROLL_THRESHOLD
 
@@ -220,7 +222,11 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <Wrapper $scrolled={isScrolled} $navTheme={navTheme}>
+      <Wrapper
+        $scrolled={isScrolled}
+        $navTheme={navTheme}
+        $notificationBarVisible={notificationBarVisible}
+      >
         <InnerWrapper $variant="wide">
           <Side $align="left">
             <Hidden $base="visible" $md="hidden">
@@ -269,7 +275,11 @@ export const Navigation: React.FC = () => {
         </InnerWrapper>
       </Wrapper>
 
-      <MobileMenu $open={mobileMenuOpen} $navTheme={navTheme}>
+      <MobileMenu
+        $open={mobileMenuOpen}
+        $navTheme={navTheme}
+        $notificationBarVisible={notificationBarVisible}
+      >
         {mobileLinks.map((link) => (
           <MobileNavLink
             key={link.id}

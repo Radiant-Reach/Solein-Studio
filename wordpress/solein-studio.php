@@ -463,6 +463,8 @@ add_action('acf/init', function () use ($client_key) {
             array('key' => 'field_ssx_options_address_line_2', 'label' => 'Adres — linia 2', 'name' => 'address_line_2', 'type' => 'text'),
             array('key' => 'field_ssx_options_hours', 'label' => 'Godziny otwarcia', 'name' => 'hours', 'type' => 'text', 'instructions' => 'np. "Pon–Sob, 8:00 – 22:00"'),
             array('key' => 'field_ssx_options_parking_note', 'label' => 'Informacja o parkingu', 'name' => 'parking_note', 'type' => 'text'),
+            array('key' => 'field_ssx_options_notification_text', 'label' => 'Pasek powiadomień — treść', 'name' => 'notification_text', 'type' => 'text', 'instructions' => 'Pokazuje się nad nawigacją na każdej stronie, tylko gdy to pole jest wypełnione.'),
+            ssx_cta_link_field('field_ssx_options', 'notification_link', 'Pasek powiadomień — link (opcjonalnie)'),
         ),
     ));
 
@@ -533,6 +535,7 @@ add_action('acf/init', function () use ($client_key) {
             ),
         ),
     ));
+
 });
 
 /* ---------------------------------------------------------------------------

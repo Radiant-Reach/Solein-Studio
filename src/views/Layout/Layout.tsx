@@ -5,6 +5,9 @@ import { env } from 'env'
 
 import { Footer } from 'components/organisms/Footer'
 import { Navigation } from 'components/organisms/Navigation'
+import { NotificationBar } from 'components/organisms/NotificationBar'
+
+import { useNotificationBar } from 'hooks/cms/useNotificationBar'
 
 import { Main } from './Layout.style'
 
@@ -15,6 +18,8 @@ type LayoutProps = {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { isVisible: notificationBarVisible } = useNotificationBar()
+
   return (
     <>
       {env.GATSBY_BREAKPOINT_PREVIEW && (
@@ -23,9 +28,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         </Suspense>
       )}
 
+      <NotificationBar />
       <Navigation />
 
-      <Main>{children}</Main>
+      <Main $notificationBarVisible={notificationBarVisible}>{children}</Main>
 
       <Footer />
     </>
