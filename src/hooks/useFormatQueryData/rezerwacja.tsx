@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { BookingProps } from 'components/organisms/Booking'
 
-import { GhlRoomId } from 'constants/ghl'
+import { RrRoomId } from 'constants/rr'
 
 import { toImage } from 'utils/format/toImage'
 
@@ -19,7 +19,7 @@ export const useFormatQueryData = (cmsData: Queries.RezerwacjaQuery) => {
       // Match by title, not slug — "Sala Zachód" currently has a stale
       // numeric fallback slug ("61") from a known WP content issue, so
       // slug matching would silently miss its photo.
-      const id: GhlRoomId | undefined = title.includes('zachód')
+      const id: RrRoomId | undefined = title.includes('zachód')
         ? 'zachod'
         : title.includes('wschód')
           ? 'wschod'

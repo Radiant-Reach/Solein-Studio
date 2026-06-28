@@ -11,23 +11,17 @@ import { BodyMedium, BodySmall, H400, Text } from 'components/atoms/Typography'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import { BOOKING_FORM_INIT_VALUES, BOOKING_FORM_SCHEMA } from 'constants/form'
-import {
-  GHL_ADD_ONS,
-  GHL_CALENDARS,
-  GhlAddOnId,
-  GhlRoomId,
-  SLOT_DURATION_MINUTES,
-} from 'constants/ghl'
+import { RR_CALENDARS, RrRoomId, SLOT_DURATION_MINUTES } from 'constants/rr'
 
 import { useForm } from 'hooks/useForm'
 
-import { createAppointment, upsertContact } from 'utils/ghl'
+import { pickFromSeed } from 'utils/pickFromSeed'
+import { RrAddOn, createAppointment, getAddOns } from 'utils/rr'
 import {
   getAvailableSlots,
   getDaysWithAvailability,
   toDateKey,
-} from 'utils/ghlAvailability'
-import { pickFromSeed } from 'utils/pickFromSeed'
+} from 'utils/rrAvailability'
 
 import { ImageType } from 'types/page'
 
@@ -73,6 +67,7 @@ import {
   StepActions,
   StepHeading,
   SubmitButtonWrapper,
+  SuccessDetails,
   WeekdaysRow,
   Wrapper,
 } from './Booking.style'
@@ -81,7 +76,7 @@ export type BookingProps = {
   eyebrow: string
   heading: string
   lead?: string
-  roomImages?: Partial<Record<GhlRoomId, ImageType>>
+  roomImages?: Partial<Record<RrRoomId, ImageType>>
 }
 
 type Step = 'service' | 'addons' | 'datetime' | 'contact'
@@ -148,9 +143,10 @@ export const Booking: React.FC<BookingProps> = ({
   roomImages,
 }) => {
   const [step, setStep] = useState<Step>('service')
-  const [roomId, setRoomId] = useState<GhlRoomId | null>(null)
+  const [roomId, setRoomId] = useState<RrRoomId | null>(null)
+  const [addOns, setAddOns] = useState<RrAddOn[]>([])
   const [addOnQuantities, setAddOnQuantities] = useState<
-    Partial<Record<GhlAddOnId, number>>
+    Record<string, number>
   >({})
   const [visibleMonth, setVisibleMonth] = useState(() =>
     startOfMonth(new Date())
@@ -162,40 +158,55 @@ export const Booking: React.FC<BookingProps> = ({
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const selectedService = roomId ? GHL_CALENDARS[roomId] : null
-  const extraHours = addOnQuantities['extra-hours'] ?? 0
-  const totalDurationMinutes =
-    SLOT_DURATION_MINUTES +
-    extraHours * (GHL_ADD_ONS['extra-hours'].unitDurationMinutes ?? 0)
+  // Add-ons (name, description, price, whether they extend the booking's
+  // duration) are configured in RR Dashboard's Settings now, not hardcoded
+  // here -- fetched once, since they aren't room-specific.
+  useEffect(() => {
+    getAddOns()
+      .then(setAddOns)
+      .catch(() => setAddOns([]))
+  }, [])
+
+  const selectedService = roomId ? RR_CALENDARS[roomId] : null
+
+  // Add-on prices come back from RR Dashboard in grosze (smallest currency
+  // unit); this site still works in whole PLN everywhere else (formatPLN,
+  // RR_CALENDARS' room prices), so divide down once here.
+  const totalDurationMinutes = useMemo(
+    () =>
+      SLOT_DURATION_MINUTES +
+      addOns.reduce(
+        (sum, addOn) =>
+          sum + (addOn.durationMinutes ?? 0) * (addOnQuantities[addOn.id] ?? 0),
+        0
+      ),
+    [addOns, addOnQuantities]
+  )
 
   const totalPrice = useMemo(() => {
     if (!selectedService) return 0
 
-    const addOnsTotal = (
-      Object.entries(addOnQuantities) as [GhlAddOnId, number | undefined][]
-    ).reduce(
-      (sum, [id, qty]) => sum + GHL_ADD_ONS[id].pricePerUnit * (qty ?? 0),
+    const addOnsTotal = addOns.reduce(
+      (sum, addOn) =>
+        sum + (addOn.price / 100) * (addOnQuantities[addOn.id] ?? 0),
       0
     )
 
     return selectedService.price + addOnsTotal
-  }, [selectedService, addOnQuantities])
+  }, [selectedService, addOns, addOnQuantities])
 
   const selectedAddOns = useMemo(
     () =>
-      (Object.entries(addOnQuantities) as [GhlAddOnId, number | undefined][])
-        .filter(([, qty]) => (qty ?? 0) > 0)
-        .map(([id, qty]) => {
-          const addOn = GHL_ADD_ONS[id]
-          const quantity = qty ?? 0
-          return {
-            id,
-            label: addOn.label,
-            quantity,
-            subtotal: addOn.pricePerUnit * quantity,
-          }
-        }),
-    [addOnQuantities]
+      addOns
+        .map((addOn) => ({ addOn, quantity: addOnQuantities[addOn.id] ?? 0 }))
+        .filter(({ quantity }) => quantity > 0)
+        .map(({ addOn, quantity }) => ({
+          id: addOn.id,
+          label: addOn.name,
+          quantity,
+          subtotal: (addOn.price / 100) * quantity,
+        })),
+    [addOns, addOnQuantities]
   )
 
   useEffect(() => {
@@ -235,92 +246,92 @@ export const Booking: React.FC<BookingProps> = ({
       .catch(() => setAvailableDays(new Set()))
   }, [step, roomId, visibleMonth, totalDurationMinutes])
 
-  const { control, errors, onSubmit, isSubmitting, isSuccess } = useForm({
-    schema: BOOKING_FORM_SCHEMA,
-    options: { defaultValues: BOOKING_FORM_INIT_VALUES },
-    resetOnSubmitSuccess: false,
-    submitHandler: async (data) => {
-      if (!roomId || !selectedSlot || !selectedService) return
+  const { control, errors, onSubmit, isSubmitting, isSuccess, getFormValues } =
+    useForm({
+      schema: BOOKING_FORM_SCHEMA,
+      options: { defaultValues: BOOKING_FORM_INIT_VALUES },
+      resetOnSubmitSuccess: false,
+      submitHandler: async (data) => {
+        if (!roomId || !selectedSlot || !selectedService) return
 
-      setSubmitError(null)
+        setSubmitError(null)
 
-      // GHL validates same-calendar conflicts on its own when the
-      // appointment is created, but it has no idea "Całe Studio" and the
-      // two individual rooms are meant to be mutually exclusive — that
-      // cross-calendar rule only exists in our own getAvailableSlots.
-      // Re-verify right before submitting, since anything could have
-      // been booked since the slot was first fetched (a few minutes on
-      // the contact step, another visitor, ...) and we'd rather catch a
-      // stale Całe Studio/room conflict here than rely on GHL to reject
-      // it. This sits outside the try/catch below so its specific
-      // message doesn't get overwritten by the generic failure one.
-      const freshSlots = await getAvailableSlots(
-        roomId,
-        selectedSlot,
-        totalDurationMinutes
-      )
-      const isStillAvailable = freshSlots.some(
-        (slot) => slot.getTime() === selectedSlot.getTime()
-      )
-
-      if (!isStillAvailable) {
-        setSubmitError(
-          'Ten termin został właśnie zarezerwowany. Wróć i wybierz inny.'
+        // RR Dashboard validates same-calendar/resource conflicts on its own
+        // when the appointment is created (it knows "Całe Studio" and the two
+        // individual rooms share resources, see constants/rr.ts), but
+        // re-verify right before submitting anyway, since anything could have
+        // been booked since the slot was first fetched (a few minutes on the
+        // contact step, another visitor, ...) and we'd rather show a clear
+        // "already booked" message than a generic failure one. This sits
+        // outside the try/catch below so its specific message doesn't get
+        // overwritten by the generic failure one.
+        const freshSlots = await getAvailableSlots(
+          roomId,
+          selectedSlot,
+          totalDurationMinutes
         )
-        setSelectedSlot(null)
-        setStep('datetime')
-        throw new Error('slot-no-longer-available')
-      }
-
-      try {
-        const contact = await upsertContact({
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-        })
-
-        const endTime = new Date(
-          selectedSlot.getTime() + totalDurationMinutes * 60000
+        const isStillAvailable = freshSlots.some(
+          (slot) => slot.getTime() === selectedSlot.getTime()
         )
 
-        // Classic Calendar Appointments have no native add-ons concept
-        // (that was Service Menu-specific) — fold the selection into the
-        // description as plain text so staff still see it in GHL, even
-        // though it isn't itemized/billed there.
-        const addOnsSummary = selectedAddOns
-          .map((addOn) =>
-            addOn.quantity > 1
-              ? `${addOn.label} ×${addOn.quantity}`
-              : addOn.label
+        if (!isStillAvailable) {
+          setSubmitError(
+            'Ten termin został właśnie zarezerwowany. Wróć i wybierz inny.'
           )
-          .join(', ')
+          setSelectedSlot(null)
+          setStep('datetime')
+          throw new Error('slot-no-longer-available')
+        }
 
-        await createAppointment({
-          calendarId: selectedService.calendarId,
-          contactId: contact.id,
-          startTime: selectedSlot.toISOString(),
-          endTime: endTime.toISOString(),
-          title:
-            `${selectedService.label} — ${data.firstName} ${data.lastName ?? ''}`.trim(),
-          description: addOnsSummary
-            ? `Dodatki: ${addOnsSummary}. Łączna kwota: ${totalPrice} zł.`
-            : `Łączna kwota: ${totalPrice} zł.`,
-        })
-      } catch {
-        setSubmitError(
-          'Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio.'
-        )
-        throw new Error('booking-failed')
-      }
-    },
-  })
+        try {
+          const endTime = new Date(
+            selectedSlot.getTime() + totalDurationMinutes * 60000
+          )
 
-  const toggleAddOn = (id: GhlAddOnId, checked: boolean) => {
+          // RR Dashboard's services have no native add-ons concept either —
+          // fold the selection into notes as plain text so staff still see it,
+          // even though it isn't itemized/billed there.
+          const addOnsSummary = selectedAddOns
+            .map((addOn) =>
+              addOn.quantity > 1
+                ? `${addOn.label} ×${addOn.quantity}`
+                : addOn.label
+            )
+            .join(', ')
+
+          await createAppointment({
+            calendarId: selectedService.calendarId,
+            serviceId: selectedService.serviceId,
+            assignedUserId: selectedService.assignedUserId,
+            startTime: selectedSlot.toISOString(),
+            endTime: endTime.toISOString(),
+            title:
+              `${selectedService.label} — ${data.firstName} ${data.lastName ?? ''}`.trim(),
+            notes: addOnsSummary
+              ? `Dodatki: ${addOnsSummary}. Łączna kwota: ${totalPrice} zł.`
+              : `Łączna kwota: ${totalPrice} zł.`,
+            customerName: `${data.firstName} ${data.lastName ?? ''}`.trim(),
+            customerEmail: data.email,
+            customerPhone: data.phone,
+            addOns: selectedAddOns.map(({ id, quantity }) => ({
+              addOnId: id,
+              quantity,
+            })),
+          })
+        } catch {
+          setSubmitError(
+            'Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio.'
+          )
+          throw new Error('booking-failed')
+        }
+      },
+    })
+
+  const toggleAddOn = (id: string, checked: boolean) => {
     setAddOnQuantities((prev) => ({ ...prev, [id]: checked ? 1 : 0 }))
   }
 
-  const setAddOnQuantity = (id: GhlAddOnId, quantity: number) => {
+  const setAddOnQuantity = (id: string, quantity: number) => {
     setAddOnQuantities((prev) => ({
       ...prev,
       [id]: Math.max(0, quantity),
@@ -358,6 +369,87 @@ export const Booking: React.FC<BookingProps> = ({
               Potwierdzenie wysłaliśmy na podany adres e-mail. Do zobaczenia w
               Soleil Studio!
             </Text>
+
+            {selectedService && selectedSlot && (
+              <SuccessDetails>
+                <SidebarTitle>
+                  <Text $base={BodyMedium} $color="ink800">
+                    Szczegóły rezerwacji
+                  </Text>
+                </SidebarTitle>
+
+                <SidebarRow>
+                  <SidebarLabel>
+                    <Text $base={BodySmall} $color="ink600">
+                      Usługa
+                    </Text>
+                  </SidebarLabel>
+                  <Text $base={BodySmall} $color="ink800">
+                    {selectedService.label}
+                  </Text>
+                </SidebarRow>
+
+                <SidebarRow>
+                  <SidebarLabel>
+                    <Text $base={BodySmall} $color="ink600">
+                      Termin
+                    </Text>
+                  </SidebarLabel>
+                  <Text $base={BodySmall} $color="ink800">
+                    {formatDayLabel(selectedSlot)},{' '}
+                    {formatTimeLabel(selectedSlot)}–
+                    {formatTimeLabel(
+                      new Date(
+                        selectedSlot.getTime() + totalDurationMinutes * 60000
+                      )
+                    )}
+                  </Text>
+                </SidebarRow>
+
+                {selectedAddOns.length > 0 && (
+                  <SidebarRow>
+                    <SidebarLabel>
+                      <Text $base={BodySmall} $color="ink600">
+                        Dodatki
+                      </Text>
+                    </SidebarLabel>
+                    <Text $base={BodySmall} $color="ink800">
+                      {selectedAddOns
+                        .map((addOn) =>
+                          addOn.quantity > 1
+                            ? `${addOn.label} ×${addOn.quantity}`
+                            : addOn.label
+                        )
+                        .join(', ')}
+                    </Text>
+                  </SidebarRow>
+                )}
+
+                <SidebarRow>
+                  <SidebarLabel>
+                    <Text $base={BodySmall} $color="ink600">
+                      Dane kontaktowe
+                    </Text>
+                  </SidebarLabel>
+                  <Text $base={BodySmall} $color="ink800">
+                    {`${getFormValues('firstName')} ${getFormValues('lastName') ?? ''}`.trim()}
+                    <br />
+                    {getFormValues('email')}
+                    <br />
+                    {getFormValues('phone')}
+                  </Text>
+                </SidebarRow>
+
+                <SidebarTotalRow>
+                  <Text $base={BodyMedium} $color="ink800">
+                    Łączna kwota
+                  </Text>
+                  <Text $base={BodyMedium} $color="ink800">
+                    {formatPLN(totalPrice)}
+                  </Text>
+                </SidebarTotalRow>
+              </SuccessDetails>
+            )}
           </Panel>
         ) : (
           <FlowGrid>
@@ -386,8 +478,8 @@ export const Booking: React.FC<BookingProps> = ({
                   </StepHeading>
 
                   <ServicesGrid>
-                    {(Object.keys(GHL_CALENDARS) as GhlRoomId[]).map((id) => {
-                      const service = GHL_CALENDARS[id]
+                    {(Object.keys(RR_CALENDARS) as RrRoomId[]).map((id) => {
+                      const service = RR_CALENDARS[id]
                       return (
                         <ServiceCard key={id}>
                           <ServicePhoto>
@@ -441,28 +533,23 @@ export const Booking: React.FC<BookingProps> = ({
                   </SelectedServiceRow>
 
                   <AddOnsList>
-                    {(
-                      Object.entries(GHL_ADD_ONS) as [
-                        GhlAddOnId,
-                        (typeof GHL_ADD_ONS)[GhlAddOnId],
-                      ][]
-                    ).map(([id, addOn]) => {
-                      const quantity = addOnQuantities[id] ?? 0
+                    {addOns.map((addOn) => {
+                      const quantity = addOnQuantities[addOn.id] ?? 0
 
                       return (
-                        <AddOnRow key={id} htmlFor={`addon-${id}`}>
+                        <AddOnRow key={addOn.id} htmlFor={`addon-${addOn.id}`}>
                           <AddOnCheckbox
-                            id={`addon-${id}`}
+                            id={`addon-${addOn.id}`}
                             type="checkbox"
                             checked={quantity > 0}
                             onChange={(event) =>
-                              toggleAddOn(id, event.target.checked)
+                              toggleAddOn(addOn.id, event.target.checked)
                             }
                           />
 
                           <AddOnInfo>
                             <Text $base={BodySmall} $color="ink800">
-                              {addOn.label}
+                              {addOn.name}
                             </Text>
                             {addOn.description && (
                               <Text $base={BodySmall} $color="ink500">
@@ -476,7 +563,7 @@ export const Booking: React.FC<BookingProps> = ({
                                   type="button"
                                   onClick={(event) => {
                                     event.preventDefault()
-                                    setAddOnQuantity(id, quantity - 1)
+                                    setAddOnQuantity(addOn.id, quantity - 1)
                                   }}
                                   disabled={quantity <= 1}
                                 >
@@ -489,7 +576,7 @@ export const Booking: React.FC<BookingProps> = ({
                                   type="button"
                                   onClick={(event) => {
                                     event.preventDefault()
-                                    setAddOnQuantity(id, quantity + 1)
+                                    setAddOnQuantity(addOn.id, quantity + 1)
                                   }}
                                 >
                                   +
@@ -500,7 +587,7 @@ export const Booking: React.FC<BookingProps> = ({
 
                           <AddOnPrice>
                             <Text $base={BodySmall} $color="ink600">
-                              {formatPLN(addOn.pricePerUnit)}
+                              {formatPLN(addOn.price / 100)}
                               {addOn.allowsQuantity && '/h'}
                             </Text>
                           </AddOnPrice>

@@ -7,6 +7,8 @@ const client = {
   GATSBY_DEBUG_MODE: process.env.GATSBY_DEBUG_MODE === 'true',
   GATSBY_MAILER_URL: process.env.GATSBY_MAILER_URL!,
   GATSBY_GHL_API_KEY: process.env.GATSBY_GHL_API_KEY!,
+  GATSBY_RR_API_BASE_URL: process.env.GATSBY_RR_API_BASE_URL!,
+  GATSBY_RR_API_KEY: process.env.GATSBY_RR_API_KEY!,
 }
 
 const server = {

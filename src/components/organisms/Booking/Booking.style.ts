@@ -349,3 +349,8 @@ export const FormNotice = styled.div`
   text-align: center;
   border-radius: ${rem(12)};
 `
+
+/* Success step */
+export const SuccessDetails = styled.div`
+  margin-top: ${rem(24)};
+`
