@@ -11,7 +11,12 @@ import { BodyMedium, BodySmall, H400, Text } from 'components/atoms/Typography'
 import { SectionHeading } from 'components/molecules/SectionHeading'
 
 import { BOOKING_FORM_INIT_VALUES, BOOKING_FORM_SCHEMA } from 'constants/form'
-import { RR_CALENDARS, RrRoomId, SLOT_DURATION_MINUTES } from 'constants/rr'
+import {
+  RR_CALENDARS,
+  RR_MESSAGE_FORM_ID,
+  RrRoomId,
+  SLOT_DURATION_MINUTES,
+} from 'constants/rr'
 
 import { useForm } from 'hooks/useForm'
 
@@ -317,6 +322,14 @@ export const Booking: React.FC<BookingProps> = ({
               addOnId: id,
               quantity,
             })),
+            // The customer's own free-text message used to be collected by
+            // this form and then silently dropped -- never sent anywhere,
+            // see git history. RR Dashboard's forms feature is the proper
+            // home for it now: a real, staff-visible field on the booking
+            // rather than folded into notes as plain text like the add-ons
+            // summary above (which has no structured equivalent on RR's side).
+            formId: data.message ? RR_MESSAGE_FORM_ID : undefined,
+            formResponses: data.message ? { message: data.message } : undefined,
           })
         } catch {
           setSubmitError(

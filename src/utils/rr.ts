@@ -71,6 +71,8 @@ export type CreateAppointmentInput = {
   customerEmail: string
   customerPhone: string
   addOns?: { addOnId: string; quantity: number }[]
+  formId?: string
+  formResponses?: Record<string, unknown>
 }
 
 // RR Dashboard upserts the contact itself from customerName/Email/Phone --
@@ -96,6 +98,8 @@ export const createAppointment = async (input: CreateAppointmentInput) => {
       customerEmail: input.customerEmail,
       customerPhone: input.customerPhone,
       addOns: input.addOns,
+      formId: input.formId,
+      formResponses: input.formResponses,
     }
   )
 

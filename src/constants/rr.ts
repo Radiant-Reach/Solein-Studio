@@ -45,3 +45,9 @@ export const RR_CALENDARS: Record<
 }
 
 export const SLOT_DURATION_MINUTES = 60
+
+// "Dodatkowe informacje o rezerwacji" -- a single textarea field (`message`)
+// matching this site's own "Dodatkowa wiadomość" booking-form field. Set up
+// once in RR Dashboard's Settings -> Calendars -> Forms for this location;
+// id is stable unless that form is deleted and recreated there.
+export const RR_MESSAGE_FORM_ID = 'FaRxr7Jnl96GV4rViXHq'
