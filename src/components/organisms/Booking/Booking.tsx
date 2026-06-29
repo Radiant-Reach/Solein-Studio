@@ -150,6 +150,7 @@ export const Booking: React.FC<BookingProps> = ({
   const [step, setStep] = useState<Step>('service')
   const [roomId, setRoomId] = useState<RrRoomId | null>(null)
   const [addOns, setAddOns] = useState<RrAddOn[]>([])
+  const [isLoadingAddOns, setIsLoadingAddOns] = useState(true)
   const [addOnQuantities, setAddOnQuantities] = useState<
     Record<string, number>
   >({})
@@ -170,6 +171,7 @@ export const Booking: React.FC<BookingProps> = ({
     getAddOns()
       .then(setAddOns)
       .catch(() => setAddOns([]))
+      .finally(() => setIsLoadingAddOns(false))
   }, [])
 
   const selectedService = roomId ? RR_CALENDARS[roomId] : null
@@ -545,68 +547,78 @@ export const Booking: React.FC<BookingProps> = ({
                     </Text>
                   </SelectedServiceRow>
 
+                  {isLoadingAddOns && (
+                    <Text $base={BodySmall} $color="ink500">
+                      Wczytywanie dodatków…
+                    </Text>
+                  )}
+
                   <AddOnsList>
-                    {addOns.map((addOn) => {
-                      const quantity = addOnQuantities[addOn.id] ?? 0
+                    {!isLoadingAddOns &&
+                      addOns.map((addOn) => {
+                        const quantity = addOnQuantities[addOn.id] ?? 0
 
-                      return (
-                        <AddOnRow key={addOn.id} htmlFor={`addon-${addOn.id}`}>
-                          <AddOnCheckbox
-                            id={`addon-${addOn.id}`}
-                            type="checkbox"
-                            checked={quantity > 0}
-                            onChange={(event) =>
-                              toggleAddOn(addOn.id, event.target.checked)
-                            }
-                          />
+                        return (
+                          <AddOnRow
+                            key={addOn.id}
+                            htmlFor={`addon-${addOn.id}`}
+                          >
+                            <AddOnCheckbox
+                              id={`addon-${addOn.id}`}
+                              type="checkbox"
+                              checked={quantity > 0}
+                              onChange={(event) =>
+                                toggleAddOn(addOn.id, event.target.checked)
+                              }
+                            />
 
-                          <AddOnInfo>
-                            <Text $base={BodySmall} $color="ink800">
-                              {addOn.name}
-                            </Text>
-                            {addOn.description && (
-                              <Text $base={BodySmall} $color="ink500">
-                                {addOn.description}
+                            <AddOnInfo>
+                              <Text $base={BodySmall} $color="ink800">
+                                {addOn.name}
                               </Text>
-                            )}
-
-                            {addOn.allowsQuantity && quantity > 0 && (
-                              <QuantityStepper>
-                                <QuantityButton
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.preventDefault()
-                                    setAddOnQuantity(addOn.id, quantity - 1)
-                                  }}
-                                  disabled={quantity <= 1}
-                                >
-                                  −
-                                </QuantityButton>
-                                <Text $base={BodySmall} $color="ink800">
-                                  {quantity}
+                              {addOn.description && (
+                                <Text $base={BodySmall} $color="ink500">
+                                  {addOn.description}
                                 </Text>
-                                <QuantityButton
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.preventDefault()
-                                    setAddOnQuantity(addOn.id, quantity + 1)
-                                  }}
-                                >
-                                  +
-                                </QuantityButton>
-                              </QuantityStepper>
-                            )}
-                          </AddOnInfo>
+                              )}
 
-                          <AddOnPrice>
-                            <Text $base={BodySmall} $color="ink600">
-                              {formatPLN(addOn.price / 100)}
-                              {addOn.allowsQuantity && '/h'}
-                            </Text>
-                          </AddOnPrice>
-                        </AddOnRow>
-                      )
-                    })}
+                              {addOn.allowsQuantity && quantity > 0 && (
+                                <QuantityStepper>
+                                  <QuantityButton
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.preventDefault()
+                                      setAddOnQuantity(addOn.id, quantity - 1)
+                                    }}
+                                    disabled={quantity <= 1}
+                                  >
+                                    −
+                                  </QuantityButton>
+                                  <Text $base={BodySmall} $color="ink800">
+                                    {quantity}
+                                  </Text>
+                                  <QuantityButton
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.preventDefault()
+                                      setAddOnQuantity(addOn.id, quantity + 1)
+                                    }}
+                                  >
+                                    +
+                                  </QuantityButton>
+                                </QuantityStepper>
+                              )}
+                            </AddOnInfo>
+
+                            <AddOnPrice>
+                              <Text $base={BodySmall} $color="ink600">
+                                {formatPLN(addOn.price / 100)}
+                                {addOn.allowsQuantity && '/h'}
+                              </Text>
+                            </AddOnPrice>
+                          </AddOnRow>
+                        )
+                      })}
                   </AddOnsList>
 
                   <StepActions>
