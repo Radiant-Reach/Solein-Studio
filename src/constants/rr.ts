@@ -18,6 +18,11 @@ export const RR_CALENDARS: Record<
     serviceId: string
     assignedUserId: string
     label: string
+    // Fallback only -- Booking.tsx merges this with the live price/
+    // requiresOnlinePayment fetched from RR Dashboard's Settings via
+    // utils/rr.ts's getServices(), keyed by serviceId below, so changes
+    // made there take effect without a deploy. This value only matters
+    // before that fetch resolves.
     price: number
   }
 > = {

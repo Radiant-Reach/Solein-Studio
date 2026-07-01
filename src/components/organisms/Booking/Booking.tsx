@@ -1,5 +1,14 @@
+import {
+  Elements,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from '@stripe/react-stripe-js'
+import { loadStripe } from '@stripe/stripe-js'
 import React, { useEffect, useMemo, useState } from 'react'
 import { Controller } from 'react-hook-form'
+
+import { env } from 'env'
 
 import { Button } from 'components/atoms/Button'
 import { Container } from 'components/atoms/Container'
@@ -21,7 +30,13 @@ import {
 import { useForm } from 'hooks/useForm'
 
 import { pickFromSeed } from 'utils/pickFromSeed'
-import { RrAddOn, createAppointment, getAddOns } from 'utils/rr'
+import {
+  RrAddOn,
+  RrService,
+  createAppointment,
+  getAddOns,
+  getServices,
+} from 'utils/rr'
 import {
   getAvailableSlots,
   getDaysWithAvailability,
@@ -84,7 +99,7 @@ export type BookingProps = {
   roomImages?: Partial<Record<RrRoomId, ImageType>>
 }
 
-type Step = 'service' | 'addons' | 'datetime' | 'contact'
+type Step = 'service' | 'addons' | 'datetime' | 'contact' | 'payment'
 
 const WEEKDAY_LABELS = ['Nd', 'Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob']
 
@@ -141,6 +156,75 @@ const getMonthGridDays = (month: Date): MonthGridDay[] => {
   return days
 }
 
+// Rendered inside <Elements>, never standalone -- useStripe/useElements
+// only resolve once the Elements provider above it has mounted with a
+// clientSecret, which is why this is a separate component rather than hooks
+// called directly inside Booking.
+type PaymentFormProps = {
+  onSuccess: () => void
+}
+
+const PaymentForm: React.FC<PaymentFormProps> = ({ onSuccess }) => {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return
+
+    setIsProcessing(true)
+    setPaymentError(null)
+
+    // allow_redirects is constrained to 'never' server-side (card-only for
+    // v1, see RR Dashboard's CLAUDE.md "Payments" section), so this resolves
+    // in place rather than navigating away.
+    const { error } = await stripe.confirmPayment({
+      elements,
+      redirect: 'if_required',
+    })
+
+    setIsProcessing(false)
+
+    if (error) {
+      setPaymentError(
+        error.message ??
+          'Płatność nie powiodła się. Spróbuj ponownie lub użyj innej karty.'
+      )
+      return
+    }
+
+    onSuccess()
+  }
+
+  return (
+    <>
+      <PaymentElement />
+
+      {paymentError && (
+        <FormNotice>
+          <Text $base={BodySmall} $color="danger">
+            {paymentError}
+          </Text>
+        </FormNotice>
+      )}
+
+      <StepActions>
+        <Button
+          type="button"
+          $variant="primary"
+          $size="medium"
+          $loading={isProcessing}
+          disabled={isProcessing || !stripe || !elements}
+          onClick={handlePay}
+        >
+          Zapłać
+        </Button>
+      </StepActions>
+    </>
+  )
+}
+
 export const Booking: React.FC<BookingProps> = ({
   eyebrow,
   heading,
@@ -163,6 +247,12 @@ export const Booking: React.FC<BookingProps> = ({
   const [isLoadingSlots, setIsLoadingSlots] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [services, setServices] = useState<RrService[]>([])
+  const [paymentIntent, setPaymentIntent] = useState<{
+    clientSecret: string
+    stripeAccountId: string
+  } | null>(null)
+  const [paymentSucceeded, setPaymentSucceeded] = useState(false)
 
   // Add-ons (name, description, price, whether they extend the booking's
   // duration) are configured in RR Dashboard's Settings now, not hardcoded
@@ -174,7 +264,40 @@ export const Booking: React.FC<BookingProps> = ({
       .finally(() => setIsLoadingAddOns(false))
   }, [])
 
-  const selectedService = roomId ? RR_CALENDARS[roomId] : null
+  // Price and "requires online payment" now live in RR Dashboard's Settings
+  // too -- fetched the same way as add-ons above. No loading-state UI here
+  // (unlike add-ons): the service cards already render a meaningful price
+  // from RR_CALENDARS immediately, this just refines it once the real value
+  // arrives, rather than showing nothing until it does.
+  useEffect(() => {
+    getServices()
+      .then(setServices)
+      .catch(() => setServices([]))
+  }, [])
+
+  // RR_CALENDARS still owns the static per-room facts (which calendar, which
+  // staff member, the service id to look up) -- price and the payment flag
+  // are no longer sourced from here, so toggling either in Settings takes
+  // effect on this site without a deploy.
+  const selectedService = useMemo(() => {
+    if (!roomId) return null
+    const staticInfo = RR_CALENDARS[roomId]
+    const fetched = services.find(
+      (service) => service.id === staticInfo.serviceId
+    )
+    return {
+      ...staticInfo,
+      price: fetched?.price != null ? fetched.price / 100 : staticInfo.price,
+      requiresOnlinePayment: fetched?.requiresOnlinePayment ?? false,
+    }
+  }, [roomId, services])
+
+  const stripePromise = useMemo(() => {
+    if (!paymentIntent) return null
+    return loadStripe(env.GATSBY_STRIPE_PUBLISHABLE_KEY, {
+      stripeAccount: paymentIntent.stripeAccountId,
+    })
+  }, [paymentIntent])
 
   // Add-on prices come back from RR Dashboard in grosze (smallest currency
   // unit); this site still works in whole PLN everywhere else (formatPLN,
@@ -306,7 +429,7 @@ export const Booking: React.FC<BookingProps> = ({
             )
             .join(', ')
 
-          await createAppointment({
+          const response = await createAppointment({
             calendarId: selectedService.calendarId,
             serviceId: selectedService.serviceId,
             assignedUserId: selectedService.assignedUserId,
@@ -332,7 +455,21 @@ export const Booking: React.FC<BookingProps> = ({
             // summary above (which has no structured equivalent on RR's side).
             formId: data.message ? RR_MESSAGE_FORM_ID : undefined,
             formResponses: data.message ? { message: data.message } : undefined,
+            requiresOnlinePayment: selectedService.requiresOnlinePayment,
           })
+
+          // The response is the actual authority on whether payment is
+          // needed (not just our own selectedService.requiresOnlinePayment
+          // belief, which could in principle be stale if the services fetch
+          // hadn't resolved yet) -- only a response carrying these fields
+          // means the server created the appointment as pending_payment.
+          if (response.paymentClientSecret && response.stripeAccountId) {
+            setPaymentIntent({
+              clientSecret: response.paymentClientSecret,
+              stripeAccountId: response.stripeAccountId,
+            })
+            setStep('payment')
+          }
         } catch {
           setSubmitError(
             'Coś poszło nie tak. Spróbuj ponownie lub napisz do nas bezpośrednio.'
@@ -341,6 +478,14 @@ export const Booking: React.FC<BookingProps> = ({
         }
       },
     })
+
+  // Gates the "Dziękujemy" panel: for a pay-in-person booking this is just
+  // isSuccess (createAppointment resolving is the whole booking), but a
+  // payment-required one must also wait for the actual charge to succeed --
+  // useForm's own isSuccess flips true the moment submitHandler resolves,
+  // which (for the payment branch) is right after the appointment is
+  // created in pending_payment, before the customer has paid anything.
+  const showThankYou = isSuccess && (!paymentIntent || paymentSucceeded)
 
   const toggleAddOn = (id: string, checked: boolean) => {
     setAddOnQuantities((prev) => ({ ...prev, [id]: checked ? 1 : 0 }))
@@ -375,7 +520,7 @@ export const Booking: React.FC<BookingProps> = ({
           </SectionHeading>
         </HeadingWrapper>
 
-        {isSuccess ? (
+        {showThankYou ? (
           <Panel>
             <Text as="h3" $base={H400} $color="ink800">
               Dziękujemy za rezerwację!
@@ -469,7 +614,7 @@ export const Booking: React.FC<BookingProps> = ({
         ) : (
           <FlowGrid>
             <Panel>
-              {step !== 'service' && (
+              {step !== 'service' && step !== 'payment' && (
                 <BackLink
                   type="button"
                   onClick={() => {
@@ -891,6 +1036,31 @@ export const Booking: React.FC<BookingProps> = ({
                       />
                     </FullWidthField>
                   </FormGrid>
+                </>
+              )}
+
+              {step === 'payment' && paymentIntent && stripePromise && (
+                <>
+                  <StepHeading>
+                    <Text as="h3" $base={H400} $color="ink800">
+                      Płatność
+                    </Text>
+                  </StepHeading>
+
+                  <Text $base={BodySmall} $color="ink600">
+                    Termin jest zarezerwowany na 15 minut, w tym czasie dokończ
+                    płatność, aby potwierdzić rezerwację.
+                  </Text>
+
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret: paymentIntent.clientSecret,
+                      locale: 'pl',
+                    }}
+                  >
+                    <PaymentForm onSuccess={() => setPaymentSucceeded(true)} />
+                  </Elements>
                 </>
               )}
             </Panel>

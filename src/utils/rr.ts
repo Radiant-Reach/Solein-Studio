@@ -35,6 +35,26 @@ export const getAddOns = async (): Promise<RrAddOn[]> => {
   return data.filter((addOn) => addOn.isActive)
 }
 
+export type RrService = {
+  id: string
+  name: string
+  price: number | null // grosze
+  requiresOnlinePayment: boolean
+  isActive: boolean
+}
+
+// Price and "requires online payment" now live in RR Dashboard's Settings
+// too -- constants/rr.ts's RR_CALENDARS keeps its serviceId mapping (which
+// room maps to which service is still a static fact about this site's three
+// rooms), but no longer owns the price or payment flag, so toggling either
+// in Settings takes effect here without a deploy.
+export const getServices = async (): Promise<RrService[]> => {
+  const { data } = await rrClient.get<RrService[]>(
+    `/api/locations/${RR_LOCATION_ID}/services`
+  )
+  return data.filter((service) => service.isActive)
+}
+
 export type GetAvailableSlotsRawInput = {
   assignedUserId: string
   calendarId: string
@@ -73,6 +93,19 @@ export type CreateAppointmentInput = {
   addOns?: { addOnId: string; quantity: number }[]
   formId?: string
   formResponses?: Record<string, unknown>
+  // Omit entirely when the service requires online payment -- RR Dashboard
+  // forces the appointment to "pending_payment" server-side in that case
+  // and ignores whatever status is sent; sending 'confirmed' unconditionally
+  // would be irrelevant there but is still the correct, explicit value for
+  // every pay-in-person booking (today's only behavior until this flag
+  // exists), so callers opt out rather than this function guessing.
+  requiresOnlinePayment?: boolean
+}
+
+export type CreateAppointmentResponse = {
+  id: string
+  paymentClientSecret?: string
+  stripeAccountId?: string
 }
 
 // RR Dashboard upserts the contact itself from customerName/Email/Phone --
@@ -81,15 +114,17 @@ export type CreateAppointmentInput = {
 // availability check above) -- RR Dashboard only enforces staff working
 // hours server-side on a write when assignedUserId is set; omitting it here
 // would silently skip that check even though the availability read used it.
-export const createAppointment = async (input: CreateAppointmentInput) => {
-  const { data } = await rrClient.post(
+export const createAppointment = async (
+  input: CreateAppointmentInput
+): Promise<CreateAppointmentResponse> => {
+  const { data } = await rrClient.post<CreateAppointmentResponse>(
     `/api/locations/${RR_LOCATION_ID}/appointments`,
     {
       calendarId: input.calendarId,
       serviceId: input.serviceId,
       assignedUserId: input.assignedUserId,
       eventType: 'appointment',
-      status: 'confirmed',
+      status: input.requiresOnlinePayment ? undefined : 'confirmed',
       title: input.title,
       startTime: input.startTime,
       endTime: input.endTime,

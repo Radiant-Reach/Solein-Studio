@@ -9,6 +9,7 @@ const client = {
   GATSBY_GHL_API_KEY: process.env.GATSBY_GHL_API_KEY!,
   GATSBY_RR_API_BASE_URL: process.env.GATSBY_RR_API_BASE_URL!,
   GATSBY_RR_API_KEY: process.env.GATSBY_RR_API_KEY!,
+  GATSBY_STRIPE_PUBLISHABLE_KEY: process.env.GATSBY_STRIPE_PUBLISHABLE_KEY!,
 }
 
 const server = {
@@ -30,7 +31,13 @@ const verifyEnv = <T extends typeof client | typeof server>(
 }
 
 if (isBrowser) {
-  verifyEnv(client, ['GATSBY_BREAKPOINT_PREVIEW'])
+  // Not yet configured -- Stripe Connect payments is built but no real key
+  // has been issued yet, same "built, not yet verified" status as the other
+  // not-yet-configured secrets documented in RR Dashboard's CLAUDE.md.
+  verifyEnv(client, [
+    'GATSBY_BREAKPOINT_PREVIEW',
+    'GATSBY_STRIPE_PUBLISHABLE_KEY',
+  ])
 }
 
 if (isSSR) {
